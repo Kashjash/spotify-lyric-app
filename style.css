@@ -73,16 +73,10 @@ html, body {
     transition: opacity 0.6s ease, width 0.5s ease, height 0.5s ease, padding 0.5s ease, margin 0.5s ease, transform 0.5s ease;
 }
 
-#top-bar.faded {
-    opacity: 0.25;
-}
+#top-bar.faded { opacity: 0.25; }
 
-#progress-wrapper {
-    transition: opacity 0.6s ease;
-}
-#progress-wrapper.faded {
-    opacity: 0.25;
-}
+#progress-wrapper { transition: opacity 0.6s ease; }
+#progress-wrapper.faded { opacity: 0.25; }
 
 /* --- MODO VERTICAL (PORTRAIT) --- */
 @media (orientation: portrait), (max-width: 600px) {
@@ -365,7 +359,7 @@ html, body {
 .dot.gold { background: #ffb700; }
 .dot.mono { background: #ffffff; }
 
-/* Vista 1: Letra Completa (Scroll Interno) */
+/* Vista 1: Letra Completa */
 #lyrics-container {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -374,6 +368,7 @@ html, body {
     flex-direction: column;
     gap: 22px;
     text-align: center;
+    touch-action: pan-y;
 }
 
 .lyric-line {
@@ -390,7 +385,7 @@ html, body {
     transform: scale(1.08);
 }
 
-/* Vista 2: Modo Karaoke Ajustado a Pantalla */
+/* Vista 2: Modo Karaoke Auto-Ajustado */
 #karaoke-container {
     display: flex;
     flex-direction: column;
@@ -400,16 +395,21 @@ html, body {
     padding: 20px;
     width: 100%;
     height: 100%;
+    overflow: hidden;
 }
 
 #karaoke-current {
     font-weight: 900;
     color: var(--primary-color);
     text-shadow: 0 0 25px var(--primary-glow);
-    line-height: 1.2;
-    transition: font-size 0.25s ease, color 0.3s ease;
+    line-height: 1.25;
     width: 100%;
-    word-wrap: break-word;
+    word-break: break-word;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-grow: 1;
 }
 
 #karaoke-next {
@@ -417,11 +417,12 @@ html, body {
     font-weight: 600;
     color: var(--text-muted);
     opacity: 0.6;
-    margin-top: 24px;
+    margin-top: 16px;
     max-width: 90%;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    flex-shrink: 0;
 }
 
 .placeholder { color: var(--text-muted); margin: auto; }
