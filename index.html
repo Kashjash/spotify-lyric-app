@@ -3,24 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Letras en Tiempo Real</title>
+    <title>Spotify Lyrics & Karaoke</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="theme-spotify">
+    <!-- Fondo ambiental dinámico -->
+    <div id="bg-blur"></div>
+
     <div id="app">
+        <!-- Pantalla de Inicio -->
         <button id="login-btn" onclick="redirectToSpotify()">Conectar con Spotify</button>
 
+        <!-- Contenedor Principal del Reproductor -->
         <div id="player-container" class="hidden">
-            <div id="track-info">
-                <img id="album-cover" src="" alt="Portada">
-                <div>
-                    <h2 id="track-title">Sin reproducción</h2>
-                    <p id="artist-name">-</p>
+            
+            <!-- Barra Superior: Info, Tiempos y Progreso -->
+            <header id="top-bar">
+                <div id="track-header">
+                    <img id="album-cover" src="" alt="Portada">
+                    <div id="track-details">
+                        <h2 id="track-title">Sin reproducción</h2>
+                        <p id="artist-name">-</p>
+                    </div>
+                    <div id="header-actions">
+                        <button class="icon-btn" onclick="toggleSettings()" title="Ajustes">⚙️</button>
+                        <button class="icon-btn" onclick="toggleFullscreen()" title="Pantalla Completa">⛶</button>
+                    </div>
+                </div>
+
+                <!-- Barra de Progreso Visual -->
+                <div id="progress-wrapper">
+                    <span id="time-elapsed">00:00</span>
+                    <div id="progress-bar-container">
+                        <div id="progress-bar-fill"></div>
+                    </div>
+                    <span id="time-remaining">-00:00</span>
+                </div>
+            </header>
+
+            <!-- Panel Flotante de Ajustes -->
+            <div id="settings-panel" class="hidden">
+                <div class="settings-group">
+                    <label>Modo de vista:</label>
+                    <button id="mode-btn" onclick="toggleKaraokeMode()">Activar Modo Karaoke 🎤</button>
+                </div>
+                <div class="settings-group">
+                    <label>Tamaño de letra:</label>
+                    <div class="btn-row">
+                        <button onclick="changeFontSize(-2)">A-</button>
+                        <button onclick="changeFontSize(2)">A+</button>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <label>Tema de color:</label>
+                    <div class="theme-picker">
+                        <span class="dot spotify" onclick="setTheme('theme-spotify')"></span>
+                        <span class="dot neon" onclick="setTheme('theme-neon')"></span>
+                        <span class="dot synthwave" onclick="setTheme('theme-synthwave')"></span>
+                        <span class="dot gold" onclick="setTheme('theme-gold')"></span>
+                        <span class="dot mono" onclick="setTheme('theme-mono')"></span>
+                    </div>
                 </div>
             </div>
-            <div id="lyrics-container">
+
+            <!-- Vista 1: Modo Desplazamiento Normal -->
+            <main id="lyrics-container">
                 <p class="placeholder">Reproduce una canción en Spotify para cargar la letra...</p>
-            </div>
+            </main>
+
+            <!-- Vista 2: Modo Karaoke Enfocado -->
+            <main id="karaoke-container" class="hidden">
+                <div id="karaoke-current">Esperando canción...</div>
+                <div id="karaoke-next">---</div>
+            </main>
+
         </div>
     </div>
     <script src="app.js"></script>
