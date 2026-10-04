@@ -1,56 +1,251 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --primary-color: #1db954;
+    --primary-glow: rgba(29, 185, 84, 0.4);
+    --text-active: #ffffff;
+    --text-muted: rgba(255, 255, 255, 0.35);
+    --bg-glass: rgba(18, 18, 18, 0.75);
+    --base-font-size: 24px;
+}
+
+/* Temas de Color */
+.theme-spotify   { --primary-color: #1db954; --primary-glow: rgba(29, 185, 84, 0.5); }
+.theme-neon      { --primary-color: #00f3ff; --primary-glow: rgba(0, 243, 255, 0.6); }
+.theme-synthwave { --primary-color: #ff007f; --primary-glow: rgba(255, 0, 127, 0.6); }
+.theme-gold      { --primary-color: #ffb700; --primary-glow: rgba(255, 183, 0, 0.5); }
+.theme-mono      { --primary-color: #ffffff; --primary-glow: rgba(255, 255, 255, 0.3); }
+
 body {
-    background-color: #121212;
+    background-color: #080808;
     color: #ffffff;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height: 100vh;
     display: flex;
     justify-content: center;
-    padding: 20px;
-}
-#app { width: 100%; max-width: 480px; text-align: center; }
-.hidden { display: none; }
-
-button {
-    background-color: #1db954;
-    color: black;
-    border: none;
-    padding: 14px 28px;
-    font-size: 16px;
-    font-weight: bold;
-    border-radius: 30px;
-    cursor: pointer;
-    margin-top: 50vh;
-    transform: translateY(-50%);
-}
-
-#track-info {
-    display: flex;
     align-items: center;
-    gap: 15px;
-    margin-bottom: 25px;
-    text-align: left;
+    overflow: hidden;
 }
-#album-cover { width: 64px; height: 64px; border-radius: 8px; }
-#track-title { font-size: 18px; font-weight: 700; color: #fff; }
-#artist-name { font-size: 14px; color: #b3b3b3; }
 
-#lyrics-container {
-    height: 70vh;
-    overflow-y: auto;
-    padding: 20px 10px;
+/* Fondo Dinámico con Portada Desenfocada */
+#bg-blur {
+    position: fixed;
+    top: -10%; left: -10%;
+    width: 120%; height: 120%;
+    background-size: cover;
+    background-position: center;
+    filter: blur(60px) brightness(0.25);
+    z-index: -1;
+    transition: background-image 1s ease-in-out;
+}
+
+#app {
+    width: 100%;
+    max-width: 650px;
+    height: 100vh;
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    scroll-behavior: smooth;
+    padding: 16px;
 }
-.lyric-line {
-    font-size: 22px;
+
+.hidden { display: none !important; }
+
+/* Botón de Inicio */
+#login-btn {
+    background-color: var(--primary-color);
+    color: #000;
+    border: none;
+    padding: 16px 32px;
+    font-size: 18px;
+    font-weight: 800;
+    border-radius: 40px;
+    cursor: pointer;
+    margin: auto;
+    box-shadow: 0 0 20px var(--primary-glow);
+}
+
+/* Barra Superior */
+#top-bar {
+    background: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 14px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#track-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+#album-cover {
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+#track-details { flex-grow: 1; overflow: hidden; }
+#track-title {
+    font-size: 16px;
     font-weight: 700;
-    color: #4a4a4a;
-    transition: color 0.3s ease, transform 0.3s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
+#artist-name {
+    font-size: 13px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.icon-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+/* Barra de Progreso */
+#progress-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+}
+
+#progress-bar-container {
+    flex-grow: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+#progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background-color: var(--primary-color);
+    box-shadow: 0 0 8px var(--primary-glow);
+    transition: width 0.3s linear;
+}
+
+/* Panel de Ajustes */
+#settings-panel {
+    background: rgba(24, 24, 24, 0.95);
+    backdrop-filter: blur(15px);
+    border-radius: 16px;
+    margin-top: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.settings-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+.settings-group button {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.btn-row { display: flex; gap: 8px; }
+
+.theme-picker { display: flex; gap: 10px; }
+.dot {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.2);
+}
+.dot.spotify { background: #1db954; }
+.dot.neon { background: #00f3ff; }
+.dot.synthwave { background: #ff007f; }
+.dot.gold { background: #ffb700; }
+.dot.mono { background: #ffffff; }
+
+/* Vista 1: Letras en Desplazamiento */
+#lyrics-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 40px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    scroll-behavior: smooth;
+    text-align: center;
+}
+
+.lyric-line {
+    font-size: var(--base-font-size);
+    font-weight: 700;
+    color: var(--text-muted);
+    transition: color 0.3s, transform 0.3s, filter 0.3s;
+    line-height: 1.3;
+}
+
 .lyric-line.active {
-    color: #1db954;
-    transform: scale(1.05);
+    color: var(--primary-color);
+    text-shadow: 0 0 15px var(--primary-glow);
+    transform: scale(1.08);
 }
-.placeholder { color: #888; margin-top: 40px; }
+
+/* Vista 2: Modo Karaoke */
+#karaoke-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+}
+
+#karaoke-current {
+    font-size: calc(var(--base-font-size) * 1.5);
+    font-weight: 900;
+    color: var(--primary-color);
+    text-shadow: 0 0 25px var(--primary-glow);
+    margin-bottom: 24px;
+    line-height: 1.25;
+    transition: all 0.2s ease;
+}
+
+#karaoke-next {
+    font-size: calc(var(--base-font-size) * 0.85);
+    font-weight: 600;
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
+.placeholder { color: var(--text-muted); margin-top: 50px; }
+
+/* Ajustes para Pantalla Horizontal (Landscape) */
+@media (orientation: landscape) and (max-height: 500px) {
+    #app { padding: 8px; }
+    #top-bar { padding: 8px 14px; }
+    #album-cover { width: 38px; height: 38px; }
+    #lyrics-container { padding: 20px 10px; gap: 14px; }
+}
