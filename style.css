@@ -68,22 +68,54 @@ html, body {
     overflow: hidden;
 }
 
-/* Transiciones de Ocultación de Menú (Fade -> Collapse) */
+/* Transiciones de Menú */
 #top-bar {
-    transition: opacity 0.6s ease, width 0.5s ease, height 0.5s ease, padding 0.5s ease, margin 0.5s ease, transform 0.5s ease;
+    transition: opacity 0.5s ease, width 0.4s ease, height 0.4s ease, padding 0.4s ease, margin 0.4s ease;
 }
 
 #top-bar.faded { opacity: 0.25; }
-
-#progress-wrapper { transition: opacity 0.6s ease; }
 #progress-wrapper.faded { opacity: 0.25; }
+
+/* Controles Multimedia */
+#playback-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin: 4px 0;
+}
+
+.control-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background 0.2s, transform 0.2s;
+}
+.control-btn:active { transform: scale(0.9); }
+.control-btn.main-play {
+    background: var(--primary-color);
+    color: #000;
+    width: 42px;
+    height: 42px;
+    font-size: 16px;
+    font-weight: bold;
+    box-shadow: 0 0 10px var(--primary-glow);
+}
 
 /* --- MODO VERTICAL (PORTRAIT) --- */
 @media (orientation: portrait), (max-width: 600px) {
     #player-container {
         flex-direction: column;
         padding: 12px;
-        gap: 12px;
+        gap: 10px;
     }
 
     #top-bar {
@@ -95,7 +127,7 @@ html, body {
         border: 1px solid rgba(255, 255, 255, 0.1);
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 8px;
         z-index: 100;
         flex-shrink: 0;
     }
@@ -117,22 +149,22 @@ html, body {
     }
 
     #album-cover {
-        width: 46px;
-        height: 46px;
+        width: 42px;
+        height: 42px;
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }
 
     #track-details { flex-grow: 1; overflow: hidden; }
     #track-title {
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 700;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
     #artist-name {
-        font-size: 12px;
+        font-size: 11px;
         color: var(--text-muted);
         white-space: nowrap;
         overflow: hidden;
@@ -171,13 +203,13 @@ html, body {
         background: var(--bg-glass);
         backdrop-filter: blur(16px);
         border-radius: 20px;
-        padding: 20px 14px;
+        padding: 16px 12px;
         border: 1px solid rgba(255, 255, 255, 0.1);
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
         align-items: center;
-        gap: 16px;
+        gap: 12px;
         z-index: 100;
         flex-shrink: 0;
     }
@@ -197,28 +229,28 @@ html, body {
         flex-direction: column;
         align-items: center;
         text-align: center;
-        gap: 12px;
+        gap: 8px;
         width: 100%;
     }
 
     #album-cover {
-        width: 105px;
-        height: 105px;
-        border-radius: 12px;
+        width: 90px;
+        height: 90px;
+        border-radius: 10px;
         box-shadow: 0 6px 16px rgba(0,0,0,0.6);
     }
 
     #track-details { width: 100%; }
     #track-title {
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 700;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
     }
     #artist-name {
-        font-size: 12px;
+        font-size: 11px;
         color: var(--text-muted);
         white-space: nowrap;
         overflow: hidden;
@@ -227,8 +259,8 @@ html, body {
 
     #header-actions {
         display: flex;
-        gap: 12px;
-        margin-top: 8px;
+        gap: 10px;
+        margin-top: 4px;
     }
 
     #progress-wrapper {
@@ -287,11 +319,11 @@ html, body {
     background: rgba(255, 255, 255, 0.15);
     border: none;
     color: #fff;
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 15px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -385,14 +417,14 @@ html, body {
     transform: scale(1.08);
 }
 
-/* Vista 2: Modo Karaoke Auto-Ajustado */
+/* Vista 2: Modo Karaoke */
 #karaoke-container {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
-    padding: 20px;
+    padding: 16px;
     width: 100%;
     height: 100%;
     overflow: hidden;
@@ -402,27 +434,34 @@ html, body {
     font-weight: 900;
     color: var(--primary-color);
     text-shadow: 0 0 25px var(--primary-glow);
-    line-height: 1.25;
+    line-height: 1.2;
     width: 100%;
     word-break: break-word;
     text-align: center;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-grow: 1;
+    flex-grow: 0;
+    transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.35s ease;
+}
+
+#karaoke-current.roll-up {
+    transform: translateY(-20px);
+    opacity: 0.2;
 }
 
 #karaoke-next {
-    font-size: 18px;
+    font-size: clamp(14px, 2.5vh, 22px);
     font-weight: 600;
     color: var(--text-muted);
     opacity: 0.6;
-    margin-top: 16px;
-    max-width: 90%;
+    margin-top: 12px;
+    max-width: 95%;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     flex-shrink: 0;
+    transition: opacity 0.3s ease;
 }
 
 .placeholder { color: var(--text-muted); margin: auto; }
