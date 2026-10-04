@@ -35,9 +35,8 @@
                     </div>
                 </div>
 
-                <!-- Botones de Control de Reproducción + Shuffle / Repeat -->
+                <!-- Botones de Control de Reproducción principales -->
                 <div id="playback-controls" class="inline-controls">
-                    <button class="control-btn secondary-control" id="shuffle-btn" onclick="toggleShuffle(event)" title="Aleatorio">🔀</button>
                     <button class="control-btn" onclick="controlPlayback('previous', event)" title="Anterior">
                         <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
                     </button>
@@ -47,7 +46,16 @@
                     <button class="control-btn" onclick="controlPlayback('next', event)" title="Siguiente">
                         <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
                     </button>
-                    <button class="control-btn secondary-control" id="repeat-btn" onclick="toggleRepeat(event)" title="Repetir">🔁</button>
+                </div>
+
+                <!-- Botones Shuffle y Repeat debajo en su propia fila -->
+                <div id="secondary-playback-controls">
+                    <button class="control-btn secondary-btn" id="shuffle-btn" onclick="toggleShuffle(event)" title="Aleatorio">
+                        <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+                    </button>
+                    <button class="control-btn secondary-btn" id="repeat-btn" onclick="toggleRepeat(event)" title="Repetir">
+                        <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+                    </button>
                 </div>
 
                 <!-- Barra de Progreso -->
@@ -81,7 +89,7 @@
                 </div>
             </div>
 
-            <!-- Modal para Añadir Playlist por URI / ID -->
+            <!-- Modal para Añadir Playlist por Link de Spotify -->
             <div id="add-playlist-modal" class="hidden">
                 <div class="modal-content small-modal">
                     <div class="modal-header">
@@ -89,7 +97,7 @@
                         <button class="close-btn" onclick="closeAddPlaylistModal()">✕</button>
                     </div>
                     <div class="modal-body">
-                        <input type="text" id="playlist-uri-input" placeholder="ID o URI de Spotify (o selecciona de tus seguidas)">
+                        <input type="text" id="playlist-uri-input" placeholder="Pega el link de Spotify (ej. https://open.spotify.com/playlist/...)">
                         <button onclick="saveNewPlaylist()">Añadir a Favoritos</button>
                     </div>
                 </div>
