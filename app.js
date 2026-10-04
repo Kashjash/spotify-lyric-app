@@ -1,6 +1,6 @@
 const CLIENT_ID = '41fe4feba0d949dfa05027199cc715e9';
 const REDIRECT_URI = window.location.origin + window.location.pathname;
-const SCOPES = 'user-read-currently-playing user-read-playback-state';
+const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state';
 
 let currentTrackId = null;
 let lyricsData = [];
@@ -11,13 +11,13 @@ let lastCheckTime = 0;
 let isKaraokeMode = false;
 let lastKaraokeText = '';
 
-// Control de interacción y atenuación progresiva
+// Control de interacción y reenganche rápido (1.5s)
 let isUserInteracting = false;
 let interactionTimeout = null;
 let fadeTimeout = null;
 let hideTimeout = null;
 
-// --- GESTO PINCH-TO-ZOOM PARA AGRANDAR / REDUCIR LETRA ---
+// --- GESTO PINCH-TO-ZOOM ---
 let initialPinchDist = 0;
 let initialFontSize = 24;
 
@@ -49,12 +49,10 @@ lyricsContainer.addEventListener('touchmove', (e) => {
 }, { passive: true });
 
 lyricsContainer.addEventListener('touchend', (e) => {
-    if (e.touches.length < 2) {
-        initialPinchDist = 0;
-    }
+    if (e.touches.length < 2) initialPinchDist = 0;
 }, { passive: true });
 
-// --- TIMER DE INACTIVIDAD Y MENÚ AUTO-HIDE ---
+// --- TIMER DE INACTIVIDAD RÁPIDO (1.5s) ---
 function resetInactivityTimer() {
     const topBar = document.getElementById('top-bar');
     const progressWrapper = document.getElementById('progress-wrapper');
@@ -69,9 +67,10 @@ function resetInactivityTimer() {
     clearTimeout(fadeTimeout);
     clearTimeout(hideTimeout);
 
+    // Reenganche súper rápido tras 1.5 segundos de inactividad
     interactionTimeout = setTimeout(() => {
         isUserInteracting = false;
-    }, 4000);
+    }, 1500);
 
     fadeTimeout = setTimeout(() => {
         topBar.classList.add('faded');
@@ -80,7 +79,6 @@ function resetInactivityTimer() {
         hideTimeout = setTimeout(() => {
             topBar.classList.add('hidden-bar');
             if (progressWrapper) progressWrapper.classList.add('hidden-bar');
-            // Re-calcular tamaño de texto karaoke al ocultar barra
             if (isKaraokeMode && lastKaraokeText) {
                 setTimeout(() => fitKaraokeText(lastKaraokeText), 300);
             }
@@ -93,9 +91,7 @@ window.addEventListener('mousemove', resetInactivityTimer, { passive: true });
 window.addEventListener('click', resetInactivityTimer, { passive: true });
 window.addEventListener('wheel', resetInactivityTimer, { passive: true });
 window.addEventListener('resize', () => {
-    if (isKaraokeMode && lastKaraokeText) {
-        fitKaraokeText(lastKaraokeText);
-    }
+    if (isKaraokeMode && lastKaraokeText) fitKaraokeText(lastKaraokeText);
 });
 
 // --- PKCE AUTH ---
@@ -154,6 +150,50 @@ async function handleCallback() {
     }
 }
 
+// --- CONTROLES MULTIMEDIA SPOTIFY API ---
+async function togglePlayPause(e) {
+    if (e) e.stopPropagation();
+    const token = localStorage.getItem('spotify_token');
+    if (!token) return;
+
+    const endpoint = isPlaying ? 'pause' : 'play';
+    try {
+        await fetch(`https://api.spotify.com/v1/me/player/${endpoint}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        isPlaying = !isPlaying;
+        updatePlayButtonUI();
+    } catch (err) {
+        console.error('Error al cambiar reproducción', err);
+    }
+    resetInactivityTimer();
+}
+
+async function controlPlayback(action, e) {
+    if (e) e.stopPropagation();
+    const token = localStorage.getItem('spotify_token');
+    if (!token) return;
+
+    try {
+        await fetch(`https://api.spotify.com/v1/me/player/${action}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        setTimeout(checkPlayback, 400); // Forzar actualización rápida
+    } catch (err) {
+        console.error(`Error en ${action}`, err);
+    }
+    resetInactivityTimer();
+}
+
+function updatePlayButtonUI() {
+    const btn = document.getElementById('play-pause-btn');
+    if (btn) {
+        btn.innerText = isPlaying ? '⏸' : '▶';
+    }
+}
+
 // --- API LETRAS ---
 async function fetchLyrics(track, artist, album, duration) {
     const durationSec = Math.round(duration / 1000);
@@ -193,7 +233,7 @@ function parseLRC(lrcText) {
     return result;
 }
 
-// --- ALGORITMO DINO AUTO-FIT KARAOKE ---
+// --- FIT KARAOKE ---
 function fitKaraokeText(text) {
     const elem = document.getElementById('karaoke-current');
     const container = document.getElementById('karaoke-container');
@@ -203,15 +243,16 @@ function fitKaraokeText(text) {
     elem.innerText = text;
     if (!text) return;
 
-    const nextHeight = (nextElem && nextElem.innerText) ? nextElem.offsetHeight + 30 : 40;
-    const maxW = container.clientWidth * 0.92;
-    const maxH = Math.max(80, container.clientHeight - nextHeight);
+    const isLandscape = window.innerWidth > window.innerHeight;
+    const nextHeight = (nextElem && nextElem.innerText) ? nextElem.offsetHeight + 24 : 30;
+    
+    const maxW = container.clientWidth * 0.96;
+    const maxH = Math.max(60, container.clientHeight - nextHeight - 20);
 
-    let low = 16;
-    let high = Math.min(window.innerHeight * 0.28, window.innerWidth * 0.14);
+    let low = 18;
+    let high = isLandscape ? Math.min(window.innerHeight * 0.45, window.innerWidth * 0.2) : Math.min(window.innerHeight * 0.28, window.innerWidth * 0.14);
     let bestSize = low;
 
-    // Búsqueda binaria para encontrar el tamaño óptimo exacto en píxeles
     while (low <= high) {
         let mid = Math.floor((low + high) / 2);
         elem.style.fontSize = mid + 'px';
@@ -229,8 +270,13 @@ function fitKaraokeText(text) {
 
 function updateKaraokeText(text) {
     if (text !== lastKaraokeText) {
-        lastKaraokeText = text;
-        fitKaraokeText(text);
+        const elem = document.getElementById('karaoke-current');
+        elem.classList.add('roll-up');
+        setTimeout(() => {
+            lastKaraokeText = text;
+            fitKaraokeText(text);
+            elem.classList.remove('roll-up');
+        }, 150);
     }
 }
 
@@ -254,6 +300,7 @@ async function checkPlayback() {
         currentProgress = data.progress_ms / 1000;
         isPlaying = data.is_playing;
         lastCheckTime = performance.now();
+        updatePlayButtonUI();
 
         if (data.item.id !== currentTrackId) {
             currentTrackId = data.item.id;
@@ -386,11 +433,6 @@ function toggleFullscreen(e) {
 function loadPreferences() {
     const savedTheme = localStorage.getItem('pref_theme');
     if (savedTheme) setTheme(savedTheme);
-
-    const savedSize = localStorage.getItem('pref_font_size');
-    if (savedSize) {
-        document.documentElement.style.setProperty('--base-font-size', `${savedSize}px`);
-    }
 
     const savedKaraoke = localStorage.getItem('pref_karaoke');
     if (savedKaraoke === 'true') {
