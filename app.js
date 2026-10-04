@@ -8,13 +8,13 @@ let currentProgress = 0;
 let trackDuration = 0;
 let isPlaying = false;
 let isShuffle = false;
-let repeatState = 'off'; // off, track, context
+let repeatState = 'off';
 let lastCheckTime = 0;
 let isKaraokeMode = false;
 let lastKaraokeText = '';
 
-// Playlists guardadas en localStorage
-let favoritePlaylists = JSON.parse(localStorage.getItem('fav_playlists') || '["37i9dQZF1DXcBWIGoYBM5M"]'); // Por defecto Release Radar si no hay nada
+// Playlists guardadas en localStorage (Release Radar por defecto si está vacío)
+let favoritePlaylists = JSON.parse(localStorage.getItem('fav_playlists') || '["37i9dQZF1DXcBWIGoYBM5M"]');
 
 // --- GESTO PINCH-TO-ZOOM ---
 let initialPinchDist = 0;
@@ -50,7 +50,7 @@ document.querySelectorAll('.zoom-target').forEach(container => {
     }, { passive: true });
 });
 
-// --- PKCE AUTH & AUTO-LIMPIEZA DE TOKEN ---
+// --- PKCE AUTH & AUTO-LIMPIEZA ---
 function generateRandomString(length) {
     const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     const values = crypto.getRandomValues(new Uint8Array(length));
@@ -197,19 +197,33 @@ function updateShuffleRepeatUI() {
     if (repeatBtn) {
         if (repeatState !== 'off') {
             repeatBtn.classList.add('active-state');
-            repeatBtn.innerText = repeatState === 'track' ? '🔂' : '🔁';
         } else {
             repeatBtn.classList.remove('active-state');
-            repeatBtn.innerText = '🔁';
         }
     }
 }
 
-// --- QUICK MENU PLAYLISTS Y CARGA DE DATOS ---
+// --- QUICK MENU PLAYLISTS Y CARGA AUTOMÁTICA ---
 async function loadPlaylistsDock() {
     const token = localStorage.getItem('spotify_token');
     const container = document.getElementById('playlists-scroll-container');
     if (!token || !container) return;
+
+    // 1. Obtener playlists del usuario para autocompletar el dock automáticamente
+    try {
+        const userPlRes = await fetch('https://api.spotify.com/v1/me/playlists?limit=25', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (userPlRes.ok) {
+            const userPlData = await userPlRes.json();
+            userPlData.items.forEach(pl => {
+                if (pl && pl.id && !favoritePlaylists.includes(pl.id)) {
+                    favoritePlaylists.push(pl.id);
+                }
+            });
+            localStorage.setItem('fav_playlists', JSON.stringify(favoritePlaylists));
+        }
+    } catch (e) { console.error(e); }
 
     container.innerHTML = '';
     for (const plId of favoritePlaylists) {
@@ -242,12 +256,15 @@ async function openPlaylistModal(playlistId, playlistName) {
     modal.classList.remove('hidden');
 
     try {
-        const res = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+        const res = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=50`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
             const data = await res.json();
             listEl.innerHTML = '';
+            
+            // Usar Fragment para renderizado ultra rápido y sin bloqueos
+            const fragment = document.createDocumentFragment();
             data.items.forEach(item => {
                 const track = item.track;
                 if (!track) return;
@@ -262,8 +279,9 @@ async function openPlaylistModal(playlistId, playlistName) {
                     </div>
                 `;
                 div.onclick = () => playTrackFromContext(track.uri, playlistId);
-                listEl.appendChild(div);
+                fragment.appendChild(div);
             });
+            listEl.appendChild(fragment);
         }
     } catch (e) { listEl.innerHTML = '<p class="placeholder">Error al cargar canciones.</p>'; }
 }
@@ -284,10 +302,15 @@ async function saveNewPlaylist() {
     const input = document.getElementById('playlist-uri-input').value.trim();
     if (!input) return;
     let id = input;
-    if (input.includes('playlist/')) {
+    
+    // Extracción inteligente si pegan el enlace de "Share" de Spotify
+    if (input.includes('spotify.com/playlist/')) {
         id = input.split('playlist/')[1].split('?')[0];
+    } else if (input.includes('playlist:')) {
+        id = input.split('playlist:')[1];
     }
-    if (!favoritePlaylists.includes(id)) {
+
+    if (id && !favoritePlaylists.includes(id)) {
         favoritePlaylists.push(id);
         localStorage.setItem('fav_playlists', JSON.stringify(favoritePlaylists));
         loadPlaylistsDock();
@@ -339,7 +362,6 @@ async function fetchLyrics(track, artist, album, duration) {
 function manualSyncLyrics(e) {
     if (e) e.stopPropagation();
     if (!currentTrackId) return;
-    // Forzar re-consulta de la letra actual
     checkPlayback(true);
 }
 
@@ -397,7 +419,7 @@ async function checkPlayback(forceLyrics = false) {
         updatePlayButtonUI();
         updateShuffleRepeatUI();
 
-        // Extraer nombre de la playlist desde el contexto si existe
+        // Mostrar nombre del playlist entrecomillado si existe contexto
         if (data.context && data.context.type === 'playlist') {
             const plUri = data.context.uri;
             const plId = plUri.split(':')[2];
@@ -426,7 +448,6 @@ async function checkPlayback(forceLyrics = false) {
             renderLyrics(lyricsData);
         }
     } catch (e) {
-        // Si el token falló, limpiamos y redirigimos de forma limpia
         if (e.status === 401) {
             localStorage.removeItem('spotify_token');
             redirectToSpotify();
