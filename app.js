@@ -9,6 +9,7 @@ let trackDuration = 0;
 let isPlaying = false;
 let lastCheckTime = 0;
 let isKaraokeMode = false;
+let lastKaraokeText = '';
 
 // Control de interacción y atenuación progresiva
 let isUserInteracting = false;
@@ -16,6 +17,44 @@ let interactionTimeout = null;
 let fadeTimeout = null;
 let hideTimeout = null;
 
+// --- GESTO PINCH-TO-ZOOM PARA AGRANDAR / REDUCIR LETRA ---
+let initialPinchDist = 0;
+let initialFontSize = 24;
+
+const lyricsContainer = document.getElementById('lyrics-container');
+
+lyricsContainer.addEventListener('touchstart', (e) => {
+    resetInactivityTimer();
+    if (e.touches.length === 2) {
+        initialPinchDist = Math.hypot(
+            e.touches[0].pageX - e.touches[1].pageX,
+            e.touches[0].pageY - e.touches[1].pageY
+        );
+        const currentSizeStr = getComputedStyle(document.documentElement).getPropertyValue('--base-font-size');
+        initialFontSize = parseFloat(currentSizeStr) || 24;
+    }
+}, { passive: true });
+
+lyricsContainer.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2 && initialPinchDist > 0) {
+        const currentDist = Math.hypot(
+            e.touches[0].pageX - e.touches[1].pageX,
+            e.touches[0].pageY - e.touches[1].pageY
+        );
+        const scale = currentDist / initialPinchDist;
+        const newSize = Math.max(16, Math.min(60, initialFontSize * scale));
+        document.documentElement.style.setProperty('--base-font-size', `${newSize}px`);
+        localStorage.setItem('pref_font_size', newSize);
+    }
+}, { passive: true });
+
+lyricsContainer.addEventListener('touchend', (e) => {
+    if (e.touches.length < 2) {
+        initialPinchDist = 0;
+    }
+}, { passive: true });
+
+// --- TIMER DE INACTIVIDAD Y MENÚ AUTO-HIDE ---
 function resetInactivityTimer() {
     const topBar = document.getElementById('top-bar');
     const progressWrapper = document.getElementById('progress-wrapper');
@@ -41,6 +80,10 @@ function resetInactivityTimer() {
         hideTimeout = setTimeout(() => {
             topBar.classList.add('hidden-bar');
             if (progressWrapper) progressWrapper.classList.add('hidden-bar');
+            // Re-calcular tamaño de texto karaoke al ocultar barra
+            if (isKaraokeMode && lastKaraokeText) {
+                setTimeout(() => fitKaraokeText(lastKaraokeText), 300);
+            }
         }, 1000);
     }, 3000);
 }
@@ -49,6 +92,11 @@ window.addEventListener('touchstart', resetInactivityTimer, { passive: true });
 window.addEventListener('mousemove', resetInactivityTimer, { passive: true });
 window.addEventListener('click', resetInactivityTimer, { passive: true });
 window.addEventListener('wheel', resetInactivityTimer, { passive: true });
+window.addEventListener('resize', () => {
+    if (isKaraokeMode && lastKaraokeText) {
+        fitKaraokeText(lastKaraokeText);
+    }
+});
 
 // --- PKCE AUTH ---
 function generateRandomString(length) {
@@ -145,6 +193,47 @@ function parseLRC(lrcText) {
     return result;
 }
 
+// --- ALGORITMO DINO AUTO-FIT KARAOKE ---
+function fitKaraokeText(text) {
+    const elem = document.getElementById('karaoke-current');
+    const container = document.getElementById('karaoke-container');
+    const nextElem = document.getElementById('karaoke-next');
+    if (!elem || !container) return;
+
+    elem.innerText = text;
+    if (!text) return;
+
+    const nextHeight = (nextElem && nextElem.innerText) ? nextElem.offsetHeight + 30 : 40;
+    const maxW = container.clientWidth * 0.92;
+    const maxH = Math.max(80, container.clientHeight - nextHeight);
+
+    let low = 16;
+    let high = Math.min(window.innerHeight * 0.28, window.innerWidth * 0.14);
+    let bestSize = low;
+
+    // Búsqueda binaria para encontrar el tamaño óptimo exacto en píxeles
+    while (low <= high) {
+        let mid = Math.floor((low + high) / 2);
+        elem.style.fontSize = mid + 'px';
+
+        if (elem.scrollWidth <= maxW && elem.scrollHeight <= maxH) {
+            bestSize = mid;
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+
+    elem.style.fontSize = bestSize + 'px';
+}
+
+function updateKaraokeText(text) {
+    if (text !== lastKaraokeText) {
+        lastKaraokeText = text;
+        fitKaraokeText(text);
+    }
+}
+
 // --- REPRODUCCIÓN Y CONTROL ---
 async function checkPlayback() {
     const token = localStorage.getItem('spotify_token');
@@ -200,27 +289,6 @@ function formatTime(seconds) {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
-function fitKaraokeText(text) {
-    const elem = document.getElementById('karaoke-current');
-    elem.innerText = text;
-
-    const isLandscape = window.innerWidth > window.innerHeight;
-    const len = text.length;
-
-    if (isLandscape) {
-        if (len < 15) elem.style.fontSize = '11vh';
-        else if (len < 35) elem.style.fontSize = '8.5vh';
-        else if (len < 65) elem.style.fontSize = '6.5vh';
-        else if (len < 100) elem.style.fontSize = '5vh';
-        else elem.style.fontSize = '4vh';
-    } else {
-        if (len < 15) elem.style.fontSize = '5.5vh';
-        else if (len < 35) elem.style.fontSize = '4.2vh';
-        else if (len < 65) elem.style.fontSize = '3.2vh';
-        else elem.style.fontSize = '2.6vh';
-    }
-}
-
 function updateUI() {
     if (isPlaying && trackDuration > 0) {
         const elapsed = (performance.now() - lastCheckTime) / 1000;
@@ -241,7 +309,7 @@ function updateUI() {
 
             if (isKaraokeMode) {
                 if (activeIndex >= 0) {
-                    fitKaraokeText(lyricsData[activeIndex].text);
+                    updateKaraokeText(lyricsData[activeIndex].text);
                     const nextLine = lyricsData[activeIndex + 1];
                     document.getElementById('karaoke-next').innerText = nextLine ? nextLine.text : '---';
                 }
@@ -288,6 +356,7 @@ function toggleKaraokeMode(e) {
         scrollContainer.classList.add('hidden');
         karaokeContainer.classList.remove('hidden');
         btn.innerText = 'Ver Letra Completa 📜';
+        if (lastKaraokeText) fitKaraokeText(lastKaraokeText);
     } else {
         scrollContainer.classList.remove('hidden');
         karaokeContainer.classList.add('hidden');
@@ -317,6 +386,11 @@ function toggleFullscreen(e) {
 function loadPreferences() {
     const savedTheme = localStorage.getItem('pref_theme');
     if (savedTheme) setTheme(savedTheme);
+
+    const savedSize = localStorage.getItem('pref_font_size');
+    if (savedSize) {
+        document.documentElement.style.setProperty('--base-font-size', `${savedSize}px`);
+    }
 
     const savedKaraoke = localStorage.getItem('pref_karaoke');
     if (savedKaraoke === 'true') {
