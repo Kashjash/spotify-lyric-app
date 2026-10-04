@@ -11,13 +11,11 @@ let lastCheckTime = 0;
 let isKaraokeMode = false;
 let lastKaraokeText = '';
 
-// Control de interacción y reenganche rápido (1.5s)
 let isUserInteracting = false;
 let interactionTimeout = null;
 let fadeTimeout = null;
 let hideTimeout = null;
 
-// --- GESTO PINCH-TO-ZOOM ---
 let initialPinchDist = 0;
 let initialFontSize = 24;
 
@@ -52,8 +50,15 @@ lyricsContainer.addEventListener('touchend', (e) => {
     if (e.touches.length < 2) initialPinchDist = 0;
 }, { passive: true });
 
-// --- TIMER DE INACTIVIDAD RÁPIDO (1.5s) ---
-function resetInactivityTimer() {
+// --- TIMER DE INACTIVIDAD (Solo despierta si se pulsa en la mitad/tercio izquierdo) ---
+function resetInactivityTimer(e) {
+    // En modo horizontal, si el toque viene de la derecha (donde están los botones flotantes o la letra), NO abrir el menú
+    if (window.innerWidth > window.innerHeight && e && e.clientX) {
+        if (e.clientX > window.innerWidth * 0.35) {
+            return; // No activar el menú si se pulsa fuera de la zona izquierda
+        }
+    }
+
     const topBar = document.getElementById('top-bar');
     const progressWrapper = document.getElementById('progress-wrapper');
     if (!topBar) return;
@@ -78,17 +83,23 @@ function resetInactivityTimer() {
         hideTimeout = setTimeout(() => {
             topBar.classList.add('hidden-bar');
             if (progressWrapper) progressWrapper.classList.add('hidden-bar');
-            // Recalcular tamaño con retardo para asegurar que la transición de colapso de la barra terminó
+            // Recálculo avanzado con retardo de 500ms para asegurar expansión total en horizontal
             if (isKaraokeMode && lastKaraokeText) {
-                setTimeout(() => fitKaraokeText(lastKaraokeText), 450);
+                setTimeout(() => fitKaraokeText(lastKaraokeText), 500);
             }
         }, 1000);
     }, 3000);
 }
 
-window.addEventListener('touchstart', resetInactivityTimer, { passive: true });
-window.addEventListener('mousemove', resetInactivityTimer, { passive: true });
-window.addEventListener('click', resetInactivityTimer, { passive: true });
+window.addEventListener('touchstart', (e) => {
+    const touchX = e.touches[0] ? e.touches[0].clientX : 0;
+    resetInactivityTimer({ clientX: touchX });
+}, { passive: true });
+
+window.addEventListener('click', (e) => {
+    resetInactivityTimer({ clientX: e.clientX });
+}, { passive: true });
+
 window.addEventListener('wheel', resetInactivityTimer, { passive: true });
 window.addEventListener('resize', () => {
     if (isKaraokeMode && lastKaraokeText) fitKaraokeText(lastKaraokeText);
@@ -112,6 +123,7 @@ function base64encode(input) {
 }
 
 async function redirectToSpotify() {
+    localStorage.clear();
     const verifier = generateRandomString(64);
     const challenge = base64encode(await sha256(verifier));
     localStorage.setItem('code_verifier', verifier);
@@ -170,7 +182,6 @@ async function togglePlayPause(e) {
     } catch (err) {
         console.error('Error al cambiar reproducción', err);
     }
-    resetInactivityTimer();
 }
 
 async function controlPlayback(action, e) {
@@ -184,19 +195,20 @@ async function controlPlayback(action, e) {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok || res.status === 204) {
-            setTimeout(checkPlayback, 500); // Forzar lectura rápida de la nueva canción
+            setTimeout(checkPlayback, 500);
         }
     } catch (err) {
         console.error(`Error en ${action}`, err);
     }
-    resetInactivityTimer();
 }
 
 function updatePlayButtonUI() {
-    const btn = document.getElementById('play-pause-btn');
-    if (btn) {
-        btn.innerText = isPlaying ? '⏸' : '▶';
-    }
+    const playBtn = document.getElementById('play-pause-btn');
+    const floatPlayBtn = document.getElementById('float-play-btn');
+    const symbol = isPlaying ? '⏸' : '▶';
+    
+    if (playBtn) playBtn.innerText = symbol;
+    if (floatPlayBtn) floatPlayBtn.innerText = symbol;
 }
 
 // --- API LETRAS ---
@@ -255,7 +267,8 @@ function fitKaraokeText(text) {
     const maxH = Math.max(60, container.clientHeight - nextHeight - 20);
 
     let low = 18;
-    let high = isLandscape ? Math.min(window.innerHeight * 0.48, window.innerWidth * 0.22) : Math.min(window.innerHeight * 0.28, window.innerWidth * 0.14);
+    // Límites aumentados para aprovechar toda la pantalla horizontal cuando el menú colapsa
+    let high = isLandscape ? Math.min(window.innerHeight * 0.55, window.innerWidth * 0.26) : Math.min(window.innerHeight * 0.28, window.innerWidth * 0.14);
     let bestSize = low;
 
     while (low <= high) {
@@ -390,11 +403,9 @@ function updateUI() {
     requestAnimationFrame(updateUI);
 }
 
-// --- CONTROLES Y CONFIGURACIÓN ---
 function toggleSettings(e) {
     if (e) e.stopPropagation();
     document.getElementById('settings-panel').classList.toggle('hidden');
-    resetInactivityTimer();
 }
 
 function toggleKaraokeMode(e) {
@@ -415,14 +426,12 @@ function toggleKaraokeMode(e) {
         btn.innerText = 'Activar Modo Karaoke 🎤';
     }
     localStorage.setItem('pref_karaoke', isKaraokeMode);
-    resetInactivityTimer();
 }
 
 function setTheme(themeName, e) {
     if (e) e.stopPropagation();
     document.body.className = themeName;
     localStorage.setItem('pref_theme', themeName);
-    resetInactivityTimer();
 }
 
 function toggleFullscreen(e) {
@@ -432,7 +441,6 @@ function toggleFullscreen(e) {
     } else {
         document.exitFullscreen().catch(() => {});
     }
-    resetInactivityTimer();
 }
 
 function loadPreferences() {
@@ -445,9 +453,7 @@ function loadPreferences() {
     }
 }
 
-// --- INICIALIZACIÓN ---
 loadPreferences();
-resetInactivityTimer();
 handleCallback().then(() => {
     setInterval(checkPlayback, 2500);
     checkPlayback();
