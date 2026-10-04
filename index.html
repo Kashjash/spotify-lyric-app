@@ -17,7 +17,7 @@
         <!-- Contenedor Principal del Reproductor -->
         <div id="player-container" class="hidden">
             
-            <!-- Barra Superior: Info, Tiempos y Progreso -->
+            <!-- Panel / Menú de Control (Arriba en Vertical, Izquierda en Horizontal) -->
             <header id="top-bar">
                 <div id="track-header">
                     <img id="album-cover" src="" alt="Portada">
@@ -26,12 +26,12 @@
                         <p id="artist-name">-</p>
                     </div>
                     <div id="header-actions">
-                        <button class="icon-btn" onclick="toggleSettings()" title="Ajustes">⚙️</button>
-                        <button class="icon-btn" onclick="toggleFullscreen()" title="Pantalla Completa">⛶</button>
+                        <button class="icon-btn" onclick="toggleSettings(event)" title="Ajustes">⚙️</button>
+                        <button class="icon-btn" onclick="toggleFullscreen(event)" title="Pantalla Completa">⛶</button>
                     </div>
                 </div>
 
-                <!-- Barra de Progreso Visual -->
+                <!-- Barra de Progreso (Arriba en Vertical, Abajo en Horizontal) -->
                 <div id="progress-wrapper">
                     <span id="time-elapsed">00:00</span>
                     <div id="progress-bar-container">
@@ -41,32 +41,36 @@
                 </div>
             </header>
 
-            <!-- Panel Flotante de Ajustes -->
+            <!-- Panel Flotante de Configuración -->
             <div id="settings-panel" class="hidden">
+                <div class="settings-header">
+                    <h3>Ajustes</h3>
+                    <button class="close-btn" onclick="toggleSettings(event)">✕</button>
+                </div>
                 <div class="settings-group">
                     <label>Modo de vista:</label>
-                    <button id="mode-btn" onclick="toggleKaraokeMode()">Activar Modo Karaoke 🎤</button>
+                    <button id="mode-btn" onclick="toggleKaraokeMode(event)">Activar Modo Karaoke 🎤</button>
                 </div>
                 <div class="settings-group">
                     <label>Tamaño de letra:</label>
                     <div class="btn-row">
-                        <button onclick="changeFontSize(-2)">A-</button>
-                        <button onclick="changeFontSize(2)">A+</button>
+                        <button onclick="changeFontSize(-2, event)">A-</button>
+                        <button onclick="changeFontSize(2, event)">A+</button>
                     </div>
                 </div>
                 <div class="settings-group">
                     <label>Tema de color:</label>
                     <div class="theme-picker">
-                        <span class="dot spotify" onclick="setTheme('theme-spotify')"></span>
-                        <span class="dot neon" onclick="setTheme('theme-neon')"></span>
-                        <span class="dot synthwave" onclick="setTheme('theme-synthwave')"></span>
-                        <span class="dot gold" onclick="setTheme('theme-gold')"></span>
-                        <span class="dot mono" onclick="setTheme('theme-mono')"></span>
+                        <span class="dot spotify" onclick="setTheme('theme-spotify', event)"></span>
+                        <span class="dot neon" onclick="setTheme('theme-neon', event)"></span>
+                        <span class="dot synthwave" onclick="setTheme('theme-synthwave', event)"></span>
+                        <span class="dot gold" onclick="setTheme('theme-gold', event)"></span>
+                        <span class="dot mono" onclick="setTheme('theme-mono', event)"></span>
                     </div>
                 </div>
             </div>
 
-            <!-- Vista 1: Modo Desplazamiento Normal -->
+            <!-- Vista 1: Letra Completa con Desplazamiento -->
             <main id="lyrics-container">
                 <p class="placeholder">Reproduce una canción en Spotify para cargar la letra...</p>
             </main>
