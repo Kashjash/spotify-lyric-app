@@ -13,95 +13,42 @@ let lastKaraokeText = '';
 
 let isUserInteracting = false;
 let interactionTimeout = null;
-let fadeTimeout = null;
-let hideTimeout = null;
 
+// --- GESTO PINCH-TO-ZOOM UNIVERSAL (Funciona tanto en Letra Completa como en Karaoke) ---
 let initialPinchDist = 0;
-let initialFontSize = 24;
+let initialFontSize = 28;
 
-const lyricsContainer = document.getElementById('lyrics-container');
-
-lyricsContainer.addEventListener('touchstart', (e) => {
-    resetInactivityTimer();
-    if (e.touches.length === 2) {
-        initialPinchDist = Math.hypot(
-            e.touches[0].pageX - e.touches[1].pageX,
-            e.touches[0].pageY - e.touches[1].pageY
-        );
-        const currentSizeStr = getComputedStyle(document.documentElement).getPropertyValue('--base-font-size');
-        initialFontSize = parseFloat(currentSizeStr) || 24;
-    }
-}, { passive: true });
-
-lyricsContainer.addEventListener('touchmove', (e) => {
-    if (e.touches.length === 2 && initialPinchDist > 0) {
-        const currentDist = Math.hypot(
-            e.touches[0].pageX - e.touches[1].pageX,
-            e.touches[0].pageY - e.touches[1].pageY
-        );
-        const scale = currentDist / initialPinchDist;
-        const newSize = Math.max(16, Math.min(60, initialFontSize * scale));
-        document.documentElement.style.setProperty('--base-font-size', `${newSize}px`);
-        localStorage.setItem('pref_font_size', newSize);
-    }
-}, { passive: true });
-
-lyricsContainer.addEventListener('touchend', (e) => {
-    if (e.touches.length < 2) initialPinchDist = 0;
-}, { passive: true });
-
-function resetInactivityTimer(e) {
-    if (window.innerWidth > window.innerHeight && e && e.clientX) {
-        if (e.clientX > window.innerWidth * 0.35) {
-            return; // Si se pulsa en la derecha (letras o botones), no despertar el menú
+document.querySelectorAll('.zoom-target').forEach(container => {
+    container.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            initialPinchDist = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+            const currentSizeStr = getComputedStyle(document.documentElement).getPropertyValue('--base-font-size');
+            initialFontSize = parseFloat(currentSizeStr) || 28;
         }
-    }
+    }, { passive: true });
 
-    const topBar = document.getElementById('top-bar');
-    const progressWrapper = document.getElementById('progress-wrapper');
-    if (!topBar) return;
+    container.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2 && initialPinchDist > 0) {
+            const currentDist = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+            const scale = currentDist / initialPinchDist;
+            const newSize = Math.max(16, Math.min(90, initialFontSize * scale));
+            document.documentElement.style.setProperty('--base-font-size', `${newSize}px`);
+            localStorage.setItem('pref_font_size', newSize);
+        }
+    }, { passive: true });
 
-    topBar.classList.remove('faded', 'hidden-bar');
-    if (progressWrapper) progressWrapper.classList.remove('faded', 'hidden-bar');
-
-    isUserInteracting = true;
-
-    clearTimeout(interactionTimeout);
-    clearTimeout(fadeTimeout);
-    clearTimeout(hideTimeout);
-
-    interactionTimeout = setTimeout(() => {
-        isUserInteracting = false;
-    }, 1500);
-
-    fadeTimeout = setTimeout(() => {
-        topBar.classList.add('faded');
-        if (progressWrapper) progressWrapper.classList.add('faded');
-
-        hideTimeout = setTimeout(() => {
-            topBar.classList.add('hidden-bar');
-            if (progressWrapper) progressWrapper.classList.add('hidden-bar');
-            if (isKaraokeMode && lastKaraokeText) {
-                setTimeout(() => fitKaraokeText(lastKaraokeText), 450);
-            }
-        }, 1000);
-    }, 3000);
-}
-
-window.addEventListener('touchstart', (e) => {
-    const touchX = e.touches[0] ? e.touches[0].clientX : 0;
-    resetInactivityTimer({ clientX: touchX });
-}, { passive: true });
-
-window.addEventListener('click', (e) => {
-    resetInactivityTimer({ clientX: e.clientX });
-}, { passive: true });
-
-window.addEventListener('wheel', resetInactivityTimer, { passive: true });
-window.addEventListener('resize', () => {
-    if (isKaraokeMode && lastKaraokeText) fitKaraokeText(lastKaraokeText);
+    container.addEventListener('touchend', (e) => {
+        if (e.touches.length < 2) initialPinchDist = 0;
+    }, { passive: true });
 });
 
+// --- PKCE AUTH ---
 function generateRandomString(length) {
     const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     const values = crypto.getRandomValues(new Uint8Array(length));
@@ -158,6 +105,7 @@ async function handleCallback() {
     }
 }
 
+// --- CONTROLES MULTIMEDIA SPOTIFY API ---
 async function togglePlayPause(e) {
     if (e) e.stopPropagation();
     const token = localStorage.getItem('spotify_token');
@@ -206,6 +154,7 @@ function updatePlayButtonUI() {
     if (floatPlayBtn) floatPlayBtn.innerText = symbol;
 }
 
+// --- API LETRAS ---
 async function fetchLyrics(track, artist, album, duration) {
     const durationSec = Math.round(duration / 1000);
     const url = `https://lrclib.net/api/get?track_name=${encodeURIComponent(track)}&artist_name=${encodeURIComponent(artist)}&album_name=${encodeURIComponent(artist)}&duration=${durationSec}`;
@@ -244,47 +193,14 @@ function parseLRC(lrcText) {
     return result;
 }
 
-function fitKaraokeText(text) {
-    const elem = document.getElementById('karaoke-current');
-    const container = document.getElementById('karaoke-container');
-    const nextElem = document.getElementById('karaoke-next');
-    if (!elem || !container) return;
-
-    elem.innerText = text;
-    if (!text) return;
-
-    const isLandscape = window.innerWidth > window.innerHeight;
-    const nextHeight = (nextElem && nextElem.innerText) ? nextElem.offsetHeight + 24 : 30;
-    
-    const maxW = container.clientWidth * 0.96;
-    const maxH = Math.max(60, container.clientHeight - nextHeight - 20);
-
-    let low = 18;
-    let high = isLandscape ? Math.min(window.innerHeight * 0.58, window.innerWidth * 0.28) : Math.min(window.innerHeight * 0.28, window.innerWidth * 0.14);
-    let bestSize = low;
-
-    while (low <= high) {
-        let mid = Math.floor((low + high) / 2);
-        elem.style.fontSize = mid + 'px';
-
-        if (elem.scrollWidth <= maxW && elem.scrollHeight <= maxH) {
-            bestSize = mid;
-            low = mid + 1;
-        } else {
-            high = mid - 1;
-        }
-    }
-
-    elem.style.fontSize = bestSize + 'px';
-}
-
+// --- ACTUALIZAR TEXTO KARAOKE CON ROLL-UP ---
 function updateKaraokeText(text) {
     if (text !== lastKaraokeText) {
+        lastKaraokeText = text;
         const elem = document.getElementById('karaoke-current');
         elem.classList.add('roll-up');
         setTimeout(() => {
-            lastKaraokeText = text;
-            fitKaraokeText(text);
+            elem.innerText = text;
             elem.classList.remove('roll-up');
         }, 150);
     }
@@ -410,7 +326,6 @@ function toggleKaraokeMode(e) {
         scrollContainer.classList.add('hidden');
         karaokeContainer.classList.remove('hidden');
         btn.innerText = 'Ver Letra Completa 📜';
-        if (lastKaraokeText) fitKaraokeText(lastKaraokeText);
     } else {
         scrollContainer.classList.remove('hidden');
         karaokeContainer.classList.add('hidden');
@@ -437,6 +352,11 @@ function toggleFullscreen(e) {
 function loadPreferences() {
     const savedTheme = localStorage.getItem('pref_theme');
     if (savedTheme) setTheme(savedTheme);
+
+    const savedSize = localStorage.getItem('pref_font_size');
+    if (savedSize) {
+        document.documentElement.style.setProperty('--base-font-size', `${savedSize}px`);
+    }
 
     const savedKaraoke = localStorage.getItem('pref_karaoke');
     if (savedKaraoke === 'true') {
