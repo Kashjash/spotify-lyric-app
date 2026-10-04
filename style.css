@@ -76,11 +76,19 @@ html, body {
     justify-content: center;
     align-items: center;
     gap: 12px;
-    margin: 4px 0;
+    margin: 4px 0 2px 0;
+}
+
+#secondary-playback-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 6px;
 }
 
 .control-btn {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.12);
     border: none;
     color: #fff;
     width: 36px;
@@ -93,7 +101,25 @@ html, body {
     transition: background 0.2s, transform 0.2s;
 }
 .control-btn:active { transform: scale(0.9); }
-.control-btn.active-state { color: var(--primary-color); background: rgba(29, 185, 84, 0.2); }
+
+/* Botones secundarios (Shuffle/Repeat) vectoriales limpios sin naranjas */
+.control-btn.secondary-btn {
+    background: rgba(255, 255, 255, 0.08);
+    width: 32px;
+    height: 32px;
+}
+
+.control-btn.secondary-btn svg {
+    fill: var(--text-muted);
+}
+
+.control-btn.secondary-btn.active-state {
+    background: rgba(29, 185, 84, 0.2) !important;
+}
+
+.control-btn.secondary-btn.active-state svg {
+    fill: var(--primary-color) !important;
+}
 
 .control-btn.main-play {
     background: var(--primary-color) !important;
@@ -211,7 +237,7 @@ html, body {
     padding: 20px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.8);
 }
-.modal-content.small-modal { max-width: 320px; }
+.modal-content.small-modal { max-width: 340px; }
 
 .modal-header {
     display: flex;
@@ -253,7 +279,7 @@ html, body {
     padding: 10px;
     border-radius: 8px;
     color: #fff;
-    font-size: 13px;
+    font-size: 12px;
 }
 .modal-body button {
     background: var(--primary-color);
@@ -282,7 +308,7 @@ html, body {
         border: 1px solid rgba(255, 255, 255, 0.1);
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 6px;
         z-index: 100;
         flex-shrink: 0;
     }
@@ -364,7 +390,7 @@ html, body {
         flex-direction: column;
         justify-content: flex-start;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         z-index: 100;
         flex-shrink: 0;
         position: relative;
