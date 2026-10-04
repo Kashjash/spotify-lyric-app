@@ -17,7 +17,7 @@
         <!-- Contenedor Principal del Reproductor -->
         <div id="player-container" class="hidden">
             
-            <!-- Panel / Menú de Control -->
+            <!-- Panel / Menú de Control (Siempre visible en horizontal para mostrar info y controles) -->
             <header id="top-bar">
                 <div id="track-header">
                     <img id="album-cover" src="" alt="Portada">
@@ -31,7 +31,7 @@
                     </div>
                 </div>
 
-                <!-- Botones de Control de Reproducción (Solo Vertical) -->
+                <!-- Botones de Control de Reproducción -->
                 <div id="playback-controls" class="inline-controls">
                     <button class="control-btn" onclick="controlPlayback('previous', event)" title="Anterior">⏮</button>
                     <button class="control-btn main-play" id="play-pause-btn" onclick="togglePlayPause(event)" title="Play/Pause">⏸</button>
@@ -48,7 +48,7 @@
                 </div>
             </header>
 
-            <!-- Controles Flotantes (ABAJO A LA DERECHA en Horizontal, separados del menú) -->
+            <!-- Controles Flotantes (ABAJO A LA DERECHA en Horizontal) -->
             <div id="floating-controls" onclick="event.stopPropagation()">
                 <button class="control-btn float-btn" onclick="controlPlayback('previous', event)" title="Anterior">⏮</button>
                 <button class="control-btn float-btn main-play" id="float-play-btn" onclick="togglePlayPause(event)" title="Play/Pause">⏸</button>
@@ -77,13 +77,13 @@
                 </div>
             </div>
 
-            <!-- Vista 1: Letra Completa -->
-            <main id="lyrics-container">
+            <!-- Vista 1: Letra Completa (Con Pinch-to-Zoom) -->
+            <main id="lyrics-container" class="zoom-target">
                 <p class="placeholder">Reproduce una canción en Spotify para cargar la letra...</p>
             </main>
 
-            <!-- Vista 2: Modo Karaoke Auto-Ajustado -->
-            <main id="karaoke-container" class="hidden">
+            <!-- Vista 2: Modo Karaoke (Con Pinch-to-Zoom incorporado) -->
+            <main id="karaoke-container" class="zoom-target hidden">
                 <div id="karaoke-current">Esperando canción...</div>
                 <div id="karaoke-next">---</div>
             </main>
