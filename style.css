@@ -100,14 +100,16 @@ html, body {
     transition: background 0.2s, transform 0.2s;
 }
 .control-btn:active { transform: scale(0.9); }
+
+/* Botón Play/Pause principal alineado estrictamente a la paleta de colores */
 .control-btn.main-play {
-    background: var(--primary-color);
-    color: #000;
+    background-color: var(--primary-color) !important;
+    color: #080808 !important;
     width: 42px;
     height: 42px;
     font-size: 16px;
-    font-weight: bold;
-    box-shadow: 0 0 10px var(--primary-glow);
+    font-weight: 900;
+    box-shadow: 0 0 12px var(--primary-glow);
 }
 
 /* --- MODO VERTICAL (PORTRAIT) --- */
