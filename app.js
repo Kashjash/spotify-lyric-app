@@ -67,7 +67,6 @@ function resetInactivityTimer() {
     clearTimeout(fadeTimeout);
     clearTimeout(hideTimeout);
 
-    // Reenganche súper rápido tras 1.5 segundos de inactividad
     interactionTimeout = setTimeout(() => {
         isUserInteracting = false;
     }, 1500);
@@ -79,8 +78,9 @@ function resetInactivityTimer() {
         hideTimeout = setTimeout(() => {
             topBar.classList.add('hidden-bar');
             if (progressWrapper) progressWrapper.classList.add('hidden-bar');
+            // Recalcular tamaño con retardo para asegurar que la transición de colapso de la barra terminó
             if (isKaraokeMode && lastKaraokeText) {
-                setTimeout(() => fitKaraokeText(lastKaraokeText), 300);
+                setTimeout(() => fitKaraokeText(lastKaraokeText), 450);
             }
         }, 1000);
     }, 3000);
@@ -158,12 +158,15 @@ async function togglePlayPause(e) {
 
     const endpoint = isPlaying ? 'pause' : 'play';
     try {
-        await fetch(`https://api.spotify.com/v1/me/player/${endpoint}`, {
+        const res = await fetch(`https://api.spotify.com/v1/me/player/${endpoint}`, {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        isPlaying = !isPlaying;
-        updatePlayButtonUI();
+        if (res.ok || res.status === 204) {
+            isPlaying = !isPlaying;
+            updatePlayButtonUI();
+            setTimeout(checkPlayback, 300);
+        }
     } catch (err) {
         console.error('Error al cambiar reproducción', err);
     }
@@ -176,11 +179,13 @@ async function controlPlayback(action, e) {
     if (!token) return;
 
     try {
-        await fetch(`https://api.spotify.com/v1/me/player/${action}`, {
+        const res = await fetch(`https://api.spotify.com/v1/me/player/${action}`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        setTimeout(checkPlayback, 400); // Forzar actualización rápida
+        if (res.ok || res.status === 204) {
+            setTimeout(checkPlayback, 500); // Forzar lectura rápida de la nueva canción
+        }
     } catch (err) {
         console.error(`Error en ${action}`, err);
     }
@@ -250,7 +255,7 @@ function fitKaraokeText(text) {
     const maxH = Math.max(60, container.clientHeight - nextHeight - 20);
 
     let low = 18;
-    let high = isLandscape ? Math.min(window.innerHeight * 0.45, window.innerWidth * 0.2) : Math.min(window.innerHeight * 0.28, window.innerWidth * 0.14);
+    let high = isLandscape ? Math.min(window.innerHeight * 0.48, window.innerWidth * 0.22) : Math.min(window.innerHeight * 0.28, window.innerWidth * 0.14);
     let bestSize = low;
 
     while (low <= high) {
