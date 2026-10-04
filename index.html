@@ -31,8 +31,8 @@
                     </div>
                 </div>
 
-                <!-- Botones de Control de Reproducción -->
-                <div id="playback-controls">
+                <!-- Botones de Control de Reproducción (En Vertical o Menú) -->
+                <div id="playback-controls" class="inline-controls">
                     <button class="control-btn" onclick="controlPlayback('previous', event)" title="Anterior">⏮</button>
                     <button class="control-btn main-play" id="play-pause-btn" onclick="togglePlayPause(event)" title="Play/Pause">⏸</button>
                     <button class="control-btn" onclick="controlPlayback('next', event)" title="Siguiente">⏭</button>
@@ -47,6 +47,13 @@
                     <span id="time-remaining">-00:00</span>
                 </div>
             </header>
+
+            <!-- Controles Flotantes Independientes (Solo visibles en Horizontal ABAJO A LA DERECHA) -->
+            <div id="floating-controls" onclick="event.stopPropagation()">
+                <button class="control-btn float-btn" onclick="controlPlayback('previous', event)" title="Anterior">⏮</button>
+                <button class="control-btn float-btn main-play" id="float-play-btn" onclick="togglePlayPause(event)" title="Play/Pause">⏸</button>
+                <button class="control-btn float-btn" onclick="controlPlayback('next', event)" title="Siguiente">⏭</button>
+            </div>
 
             <!-- Panel Flotante de Configuración -->
             <div id="settings-panel" class="hidden">
