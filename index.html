@@ -20,29 +20,34 @@
             <!-- Panel / Menú de Control -->
             <header id="top-bar">
                 <div id="track-header">
+                    <!-- Nombre de la playlist actual entrecomillado encima del álbum -->
+                    <div id="playlist-context-label" class="hidden">"---"</div>
                     <img id="album-cover" src="" alt="Portada">
                     <div id="track-details">
                         <h2 id="track-title">Sin reproducción</h2>
                         <p id="artist-name">-</p>
+                        <p id="album-name">-</p>
                     </div>
                     <div id="header-actions">
+                        <button class="icon-btn" onclick="manualSyncLyrics(event)" title="Sincronizar/Refrescar Letra">🔄</button>
                         <button class="icon-btn" onclick="toggleSettings(event)" title="Ajustes">⚙</button>
                         <button class="icon-btn" onclick="toggleFullscreen(event)" title="Pantalla Completa">⛶</button>
                     </div>
                 </div>
 
-                <!-- Botones de Control de Reproducción -->
+                <!-- Botones de Control de Reproducción + Shuffle / Repeat -->
                 <div id="playback-controls" class="inline-controls">
+                    <button class="control-btn secondary-control" id="shuffle-btn" onclick="toggleShuffle(event)" title="Aleatorio">🔀</button>
                     <button class="control-btn" onclick="controlPlayback('previous', event)" title="Anterior">
                         <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
                     </button>
                     <button class="control-btn main-play" id="play-pause-btn" onclick="togglePlayPause(event)" title="Play/Pause">
-                        <!-- SVG dinámico que cambia entre Play y Pause -->
                         <svg id="play-pause-svg" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                     </button>
                     <button class="control-btn" onclick="controlPlayback('next', event)" title="Siguiente">
                         <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
                     </button>
+                    <button class="control-btn secondary-control" id="repeat-btn" onclick="toggleRepeat(event)" title="Repetir">🔁</button>
                 </div>
 
                 <!-- Barra de Progreso -->
@@ -54,6 +59,41 @@
                     <span id="time-remaining">-00:00</span>
                 </div>
             </header>
+
+            <!-- Quick Menu de Playlists (Barra Inferior) -->
+            <div id="playlists-dock">
+                <div id="playlists-scroll-container">
+                    <!-- Se inyectan dinámicamente aquí -->
+                </div>
+                <button id="add-playlist-btn" onclick="openAddPlaylistModal(event)" title="Añadir Playlist">+</button>
+            </div>
+
+            <!-- Modal Desplegable / Selector de Playlist -->
+            <div id="playlist-tracks-modal" class="hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="modal-playlist-title">Playlist</h3>
+                        <button class="close-btn" onclick="closePlaylistModal()">✕</button>
+                    </div>
+                    <div id="modal-tracks-list">
+                        <!-- Canciones de la playlist -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal para Añadir Playlist por URI / ID -->
+            <div id="add-playlist-modal" class="hidden">
+                <div class="modal-content small-modal">
+                    <div class="modal-header">
+                        <h3>Añadir Playlist</h3>
+                        <button class="close-btn" onclick="closeAddPlaylistModal()">✕</button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="text" id="playlist-uri-input" placeholder="ID o URI de Spotify (o selecciona de tus seguidas)">
+                        <button onclick="saveNewPlaylist()">Añadir a Favoritos</button>
+                    </div>
+                </div>
+            </div>
 
             <!-- Panel Flotante de Configuración -->
             <div id="settings-panel" class="hidden">
