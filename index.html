@@ -68,25 +68,12 @@
                 </div>
             </header>
 
-            <!-- Quick Menu de Playlists (Barra Inferior) -->
+            <!-- Quick Menu de Playlists (Barra Inferior limpia y ligera) -->
             <div id="playlists-dock">
                 <div id="playlists-scroll-container">
-                    <!-- Se inyectan dinámicamente aquí -->
+                    <!-- Se inyectan dinámicamente solo carátulas y nombres -->
                 </div>
                 <button id="add-playlist-btn" onclick="openAddPlaylistModal(event)" title="Añadir Playlist">+</button>
-            </div>
-
-            <!-- Modal Desplegable / Selector de Playlist -->
-            <div id="playlist-tracks-modal" class="hidden">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3 id="modal-playlist-title">Playlist</h3>
-                        <button class="close-btn" onclick="closePlaylistModal()">✕</button>
-                    </div>
-                    <div id="modal-tracks-list">
-                        <!-- Canciones de la playlist -->
-                    </div>
-                </div>
             </div>
 
             <!-- Modal para Añadir Playlist por Link de Spotify -->
