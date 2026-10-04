@@ -17,7 +17,7 @@
         <!-- Contenedor Principal del Reproductor -->
         <div id="player-container" class="hidden">
             
-            <!-- Panel / Menú de Control (Siempre visible en horizontal para mostrar info y controles) -->
+            <!-- Panel / Menú de Control -->
             <header id="top-bar">
                 <div id="track-header">
                     <img id="album-cover" src="" alt="Portada">
@@ -33,9 +33,16 @@
 
                 <!-- Botones de Control de Reproducción -->
                 <div id="playback-controls" class="inline-controls">
-                    <button class="control-btn" onclick="controlPlayback('previous', event)" title="Anterior">⏮</button>
-                    <button class="control-btn main-play" id="play-pause-btn" onclick="togglePlayPause(event)" title="Play/Pause">⏸</button>
-                    <button class="control-btn" onclick="controlPlayback('next', event)" title="Siguiente">⏭</button>
+                    <button class="control-btn" onclick="controlPlayback('previous', event)" title="Anterior">
+                        <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+                    </button>
+                    <button class="control-btn main-play" id="play-pause-btn" onclick="togglePlayPause(event)" title="Play/Pause">
+                        <!-- SVG dinámico que cambia entre Play y Pause -->
+                        <svg id="play-pause-svg" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    </button>
+                    <button class="control-btn" onclick="controlPlayback('next', event)" title="Siguiente">
+                        <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                    </button>
                 </div>
 
                 <!-- Barra de Progreso -->
@@ -47,13 +54,6 @@
                     <span id="time-remaining">-00:00</span>
                 </div>
             </header>
-
-            <!-- Controles Flotantes (ABAJO A LA DERECHA en Horizontal) -->
-            <div id="floating-controls" onclick="event.stopPropagation()">
-                <button class="control-btn float-btn" onclick="controlPlayback('previous', event)" title="Anterior">⏮</button>
-                <button class="control-btn float-btn main-play" id="float-play-btn" onclick="togglePlayPause(event)" title="Play/Pause">⏸</button>
-                <button class="control-btn float-btn" onclick="controlPlayback('next', event)" title="Siguiente">⏭</button>
-            </div>
 
             <!-- Panel Flotante de Configuración -->
             <div id="settings-panel" class="hidden">
@@ -82,7 +82,7 @@
                 <p class="placeholder">Reproduce una canción en Spotify para cargar la letra...</p>
             </main>
 
-            <!-- Vista 2: Modo Karaoke (Con Pinch-to-Zoom incorporado) -->
+            <!-- Vista 2: Modo Karaoke (Con Pinch-to-Zoom) -->
             <main id="karaoke-container" class="zoom-target hidden">
                 <div id="karaoke-current">Esperando canción...</div>
                 <div id="karaoke-next">---</div>
