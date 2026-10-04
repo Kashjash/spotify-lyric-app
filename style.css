@@ -5,7 +5,7 @@
     --primary-glow: rgba(29, 185, 84, 0.4);
     --text-active: #ffffff;
     --text-muted: rgba(255, 255, 255, 0.4);
-    --bg-glass: rgba(18, 18, 18, 0.88);
+    --bg-glass: rgba(18, 18, 18, 0.9);
     --base-font-size: 28px;
 }
 
@@ -71,14 +71,11 @@ html, body {
     transition: opacity 0.4s ease;
 }
 
-#top-bar.faded { opacity: 0.25; }
-#progress-wrapper.faded { opacity: 0.25; }
-
 .inline-controls {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     margin: 4px 0;
 }
 
@@ -86,8 +83,8 @@ html, body {
     background: rgba(255, 255, 255, 0.15);
     border: none;
     color: #fff;
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
@@ -96,19 +93,176 @@ html, body {
     transition: background 0.2s, transform 0.2s;
 }
 .control-btn:active { transform: scale(0.9); }
+.control-btn.active-state { color: var(--primary-color); background: rgba(29, 185, 84, 0.2); }
 
-/* Botón principal puramente vectorial, blindado contra fondos naranjas del navegador */
 .control-btn.main-play {
     background: var(--primary-color) !important;
-    background-color: var(--primary-color) !important;
     color: #080808 !important;
-    width: 46px;
-    height: 46px;
+    width: 44px;
+    height: 44px;
     box-shadow: 0 0 14px var(--primary-glow);
 }
+.control-btn.main-play svg { fill: #080808 !important; }
 
-.control-btn.main-play svg {
-    fill: #080808 !important;
+/* Nombre de playlist actual sobre el álbum */
+#playlist-context-label {
+    font-size: 11px;
+    color: var(--primary-color);
+    font-weight: 700;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    text-align: center;
+}
+
+/* Quick Menu Dock de Playlists (Inferior) */
+#playlists-dock {
+    position: absolute;
+    bottom: 12px;
+    left: 260px;
+    right: 16px;
+    height: 60px;
+    background: var(--bg-glass);
+    backdrop-filter: blur(16px);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    gap: 10px;
+    z-index: 120;
+}
+
+#playlists-scroll-container {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    flex-grow: 1;
+    scrollbar-width: none;
+}
+#playlists-scroll-container::-webkit-scrollbar { display: none; }
+
+.playlist-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 4px 10px 4px 4px;
+    border-radius: 20px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+.playlist-pill:hover { background: rgba(255, 255, 255, 0.15); }
+.playlist-pill img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.playlist-pill span {
+    font-size: 12px;
+    font-weight: 600;
+    max-width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#add-playlist-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Modales de Playlists */
+#playlist-tracks-modal, #add-playlist-modal {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 400;
+}
+
+.modal-content {
+    background: #181818;
+    border: 1px solid rgba(255,255,255,0.15);
+    width: 90%;
+    max-width: 420px;
+    max-height: 80vh;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+}
+.modal-content.small-modal { max-width: 320px; }
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+}
+.modal-header h3 { font-size: 16px; font-weight: 700; }
+.close-btn { background: none; border: none; color: #fff; font-size: 18px; cursor: pointer; }
+
+#modal-tracks-list {
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.modal-track-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.modal-track-item:hover { background: rgba(255,255,255,0.08); }
+.modal-track-item img { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; }
+.modal-track-info { display: flex; flex-direction: column; overflow: hidden; }
+.modal-track-title { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.modal-track-artist { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.modal-body { display: flex; flex-direction: column; gap: 12px; }
+.modal-body input {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 10px;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 13px;
+}
+.modal-body button {
+    background: var(--primary-color);
+    color: #000;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
 }
 
 /* --- MODO VERTICAL (PORTRAIT) --- */
@@ -140,8 +294,8 @@ html, body {
     }
 
     #album-cover {
-        width: 42px;
-        height: 42px;
+        width: 48px;
+        height: 48px;
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }
@@ -161,6 +315,14 @@ html, body {
         overflow: hidden;
         text-overflow: ellipsis;
     }
+    #album-name {
+        font-size: 10px;
+        color: var(--text-muted);
+        opacity: 0.7;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
     #header-actions { display: flex; gap: 8px; }
 
@@ -173,10 +335,12 @@ html, body {
         color: var(--text-muted);
     }
 
+    #playlists-dock { left: 12px; bottom: 8px; }
     #lyrics-container, #karaoke-container {
         flex: 1;
         width: 100%;
         height: 100%;
+        padding-bottom: 70px;
         min-height: 0;
     }
 }
@@ -200,14 +364,10 @@ html, body {
         flex-direction: column;
         justify-content: flex-start;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
         z-index: 100;
         flex-shrink: 0;
         position: relative;
-    }
-
-    #top-bar .inline-controls {
-        display: flex;
     }
 
     #track-header {
@@ -215,20 +375,20 @@ html, body {
         flex-direction: column;
         align-items: center;
         text-align: center;
-        gap: 8px;
+        gap: 6px;
         width: 100%;
     }
 
     #album-cover {
-        width: 100px;
-        height: 100px;
+        width: 90px;
+        height: 90px;
         border-radius: 10px;
         box-shadow: 0 6px 16px rgba(0,0,0,0.6);
     }
 
     #track-details { width: 100%; }
     #track-title {
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 700;
         white-space: nowrap;
         overflow: hidden;
@@ -236,8 +396,16 @@ html, body {
         margin-bottom: 2px;
     }
     #artist-name {
-        font-size: 12px;
+        font-size: 11px;
         color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    #album-name {
+        font-size: 10px;
+        color: var(--text-muted);
+        opacity: 0.7;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -245,25 +413,26 @@ html, body {
 
     #header-actions {
         display: flex;
-        gap: 10px;
-        margin-top: 4px;
+        gap: 8px;
+        margin-top: 2px;
     }
 
     #progress-wrapper {
         width: 100%;
-        height: 36px;
+        height: 32px;
         background: rgba(0, 0, 0, 0.2);
-        border-radius: 10px;
-        padding: 0 10px;
+        border-radius: 8px;
+        padding: 0 8px;
         display: flex;
         align-items: center;
-        gap: 8px;
-        font-size: 11px;
+        gap: 6px;
+        font-size: 10px;
         font-variant-numeric: tabular-nums;
         color: var(--text-muted);
         margin-top: auto;
     }
 
+    #playlists-dock { left: 260px; bottom: 12px; }
     #lyrics-container, #karaoke-container {
         flex: 1;
         height: 100%;
@@ -293,8 +462,8 @@ html, body {
     background: rgba(255, 255, 255, 0.15);
     border: none;
     color: #fff;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
@@ -306,11 +475,9 @@ html, body {
 
 #settings-panel {
     position: fixed;
-    top: 50%;
-    left: 50%;
+    top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    width: 90%;
-    max-width: 360px;
+    width: 90%; max-width: 360px;
     background: rgba(20, 20, 20, 0.95);
     backdrop-filter: blur(20px);
     border-radius: 20px;
@@ -320,7 +487,7 @@ html, body {
     gap: 16px;
     border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-    z-index: 300;
+    z-index: 500;
 }
 
 .settings-header {
@@ -339,7 +506,6 @@ html, body {
     align-items: center;
     font-size: 14px;
 }
-
 .settings-group button {
     background: rgba(255, 255, 255, 0.15);
     color: #fff;
@@ -363,11 +529,10 @@ html, body {
 .dot.gold { background: #ffb700; }
 .dot.mono { background: #ffffff; }
 
-/* Vista 1: Letra Completa */
 #lyrics-container {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 35vh 15px;
+    padding: 35vh 15px 90px 15px;
     display: flex;
     flex-direction: column;
     gap: 22px;
@@ -389,14 +554,13 @@ html, body {
     transform: scale(1.08);
 }
 
-/* Vista 2: Modo Karaoke */
 #karaoke-container {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
-    padding: 24px;
+    padding: 24px 24px 80px 24px;
     width: 100%;
     height: 100%;
     overflow: hidden;
