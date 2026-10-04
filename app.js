@@ -50,12 +50,10 @@ lyricsContainer.addEventListener('touchend', (e) => {
     if (e.touches.length < 2) initialPinchDist = 0;
 }, { passive: true });
 
-// --- TIMER DE INACTIVIDAD (Solo despierta si se pulsa en la mitad/tercio izquierdo) ---
 function resetInactivityTimer(e) {
-    // En modo horizontal, si el toque viene de la derecha (donde están los botones flotantes o la letra), NO abrir el menú
     if (window.innerWidth > window.innerHeight && e && e.clientX) {
         if (e.clientX > window.innerWidth * 0.35) {
-            return; // No activar el menú si se pulsa fuera de la zona izquierda
+            return; // Si se pulsa en la derecha (letras o botones), no despertar el menú
         }
     }
 
@@ -83,9 +81,8 @@ function resetInactivityTimer(e) {
         hideTimeout = setTimeout(() => {
             topBar.classList.add('hidden-bar');
             if (progressWrapper) progressWrapper.classList.add('hidden-bar');
-            // Recálculo avanzado con retardo de 500ms para asegurar expansión total en horizontal
             if (isKaraokeMode && lastKaraokeText) {
-                setTimeout(() => fitKaraokeText(lastKaraokeText), 500);
+                setTimeout(() => fitKaraokeText(lastKaraokeText), 450);
             }
         }, 1000);
     }, 3000);
@@ -105,7 +102,6 @@ window.addEventListener('resize', () => {
     if (isKaraokeMode && lastKaraokeText) fitKaraokeText(lastKaraokeText);
 });
 
-// --- PKCE AUTH ---
 function generateRandomString(length) {
     const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     const values = crypto.getRandomValues(new Uint8Array(length));
@@ -162,7 +158,6 @@ async function handleCallback() {
     }
 }
 
-// --- CONTROLES MULTIMEDIA SPOTIFY API ---
 async function togglePlayPause(e) {
     if (e) e.stopPropagation();
     const token = localStorage.getItem('spotify_token');
@@ -211,7 +206,6 @@ function updatePlayButtonUI() {
     if (floatPlayBtn) floatPlayBtn.innerText = symbol;
 }
 
-// --- API LETRAS ---
 async function fetchLyrics(track, artist, album, duration) {
     const durationSec = Math.round(duration / 1000);
     const url = `https://lrclib.net/api/get?track_name=${encodeURIComponent(track)}&artist_name=${encodeURIComponent(artist)}&album_name=${encodeURIComponent(artist)}&duration=${durationSec}`;
@@ -250,7 +244,6 @@ function parseLRC(lrcText) {
     return result;
 }
 
-// --- FIT KARAOKE ---
 function fitKaraokeText(text) {
     const elem = document.getElementById('karaoke-current');
     const container = document.getElementById('karaoke-container');
@@ -267,8 +260,7 @@ function fitKaraokeText(text) {
     const maxH = Math.max(60, container.clientHeight - nextHeight - 20);
 
     let low = 18;
-    // Límites aumentados para aprovechar toda la pantalla horizontal cuando el menú colapsa
-    let high = isLandscape ? Math.min(window.innerHeight * 0.55, window.innerWidth * 0.26) : Math.min(window.innerHeight * 0.28, window.innerWidth * 0.14);
+    let high = isLandscape ? Math.min(window.innerHeight * 0.58, window.innerWidth * 0.28) : Math.min(window.innerHeight * 0.28, window.innerWidth * 0.14);
     let bestSize = low;
 
     while (low <= high) {
@@ -298,7 +290,6 @@ function updateKaraokeText(text) {
     }
 }
 
-// --- REPRODUCCIÓN Y CONTROL ---
 async function checkPlayback() {
     const token = localStorage.getItem('spotify_token');
     if (!token) return;
