@@ -9,28 +9,46 @@ let trackDuration = 0;
 let isPlaying = false;
 let lastCheckTime = 0;
 let isKaraokeMode = false;
-let fontSize = 24;
+
+// Control de interacción y atenuación progresiva
+let isUserInteracting = false;
+let interactionTimeout = null;
+let fadeTimeout = null;
 let hideTimeout = null;
 
-// --- CONTROL DE ATENUACIÓN DE MENÚ (AUTO-HIDE) ---
 function resetInactivityTimer() {
     const topBar = document.getElementById('top-bar');
     const progressWrapper = document.getElementById('progress-wrapper');
     if (!topBar) return;
 
-    topBar.classList.remove('inactive-fade');
-    if (progressWrapper) progressWrapper.classList.remove('inactive-fade');
+    topBar.classList.remove('faded', 'hidden-bar');
+    if (progressWrapper) progressWrapper.classList.remove('faded', 'hidden-bar');
 
+    isUserInteracting = true;
+
+    clearTimeout(interactionTimeout);
+    clearTimeout(fadeTimeout);
     clearTimeout(hideTimeout);
-    hideTimeout = setTimeout(() => {
-        topBar.classList.add('inactive-fade');
-        if (progressWrapper) progressWrapper.classList.add('inactive-fade');
+
+    interactionTimeout = setTimeout(() => {
+        isUserInteracting = false;
     }, 4000);
+
+    fadeTimeout = setTimeout(() => {
+        topBar.classList.add('faded');
+        if (progressWrapper) progressWrapper.classList.add('faded');
+
+        hideTimeout = setTimeout(() => {
+            topBar.classList.add('hidden-bar');
+            if (progressWrapper) progressWrapper.classList.add('hidden-bar');
+        }, 1000);
+    }, 3000);
 }
 
-window.addEventListener('mousemove', resetInactivityTimer);
-window.addEventListener('touchstart', resetInactivityTimer);
-window.addEventListener('click', resetInactivityTimer);
+window.addEventListener('touchstart', resetInactivityTimer, { passive: true });
+window.addEventListener('mousemove', resetInactivityTimer, { passive: true });
+window.addEventListener('click', resetInactivityTimer, { passive: true });
+window.addEventListener('wheel', resetInactivityTimer, { passive: true });
 
 // --- PKCE AUTH ---
 function generateRandomString(length) {
@@ -91,7 +109,7 @@ async function handleCallback() {
 // --- API LETRAS ---
 async function fetchLyrics(track, artist, album, duration) {
     const durationSec = Math.round(duration / 1000);
-    const url = `https://lrclib.net/api/get?track_name=${encodeURIComponent(track)}&artist_name=${encodeURIComponent(artist)}&album_name=${encodeURIComponent(album)}&duration=${durationSec}`;
+    const url = `https://lrclib.net/api/get?track_name=${encodeURIComponent(track)}&artist_name=${encodeURIComponent(artist)}&album_name=${encodeURIComponent(artist)}&duration=${durationSec}`;
     try {
         let res = await fetch(url);
         if (!res.ok) {
@@ -127,7 +145,7 @@ function parseLRC(lrcText) {
     return result;
 }
 
-// --- REPRODUCCIÓN ---
+// --- REPRODUCCIÓN Y CONTROL ---
 async function checkPlayback() {
     const token = localStorage.getItem('spotify_token');
     if (!token) return;
@@ -182,6 +200,27 @@ function formatTime(seconds) {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
+function fitKaraokeText(text) {
+    const elem = document.getElementById('karaoke-current');
+    elem.innerText = text;
+
+    const isLandscape = window.innerWidth > window.innerHeight;
+    const len = text.length;
+
+    if (isLandscape) {
+        if (len < 15) elem.style.fontSize = '11vh';
+        else if (len < 35) elem.style.fontSize = '8.5vh';
+        else if (len < 65) elem.style.fontSize = '6.5vh';
+        else if (len < 100) elem.style.fontSize = '5vh';
+        else elem.style.fontSize = '4vh';
+    } else {
+        if (len < 15) elem.style.fontSize = '5.5vh';
+        else if (len < 35) elem.style.fontSize = '4.2vh';
+        else if (len < 65) elem.style.fontSize = '3.2vh';
+        else elem.style.fontSize = '2.6vh';
+    }
+}
+
 function updateUI() {
     if (isPlaying && trackDuration > 0) {
         const elapsed = (performance.now() - lastCheckTime) / 1000;
@@ -202,16 +241,24 @@ function updateUI() {
 
             if (isKaraokeMode) {
                 if (activeIndex >= 0) {
-                    document.getElementById('karaoke-current').innerText = lyricsData[activeIndex].text;
+                    fitKaraokeText(lyricsData[activeIndex].text);
                     const nextLine = lyricsData[activeIndex + 1];
                     document.getElementById('karaoke-next').innerText = nextLine ? nextLine.text : '---';
                 }
             } else {
+                const container = document.getElementById('lyrics-container');
                 document.querySelectorAll('.lyric-line').forEach((line, index) => {
                     if (index === activeIndex) {
                         if (!line.classList.contains('active')) {
                             line.classList.add('active');
-                            line.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                            if (!isUserInteracting) {
+                                const containerHeight = container.clientHeight;
+                                const lineTop = line.offsetTop;
+                                const lineHeight = line.clientHeight;
+                                const targetScroll = lineTop - (containerHeight / 2) + (lineHeight / 2);
+                                container.scrollTo({ top: targetScroll, behavior: 'smooth' });
+                            }
                         }
                     } else {
                         line.classList.remove('active');
@@ -223,7 +270,7 @@ function updateUI() {
     requestAnimationFrame(updateUI);
 }
 
-// --- CONTROLES DE AJUSTES ---
+// --- CONTROLES Y CONFIGURACIÓN ---
 function toggleSettings(e) {
     if (e) e.stopPropagation();
     document.getElementById('settings-panel').classList.toggle('hidden');
@@ -250,14 +297,6 @@ function toggleKaraokeMode(e) {
     resetInactivityTimer();
 }
 
-function changeFontSize(delta, e) {
-    if (e) e.stopPropagation();
-    fontSize = Math.max(16, Math.min(42, fontSize + delta));
-    document.documentElement.style.setProperty('--base-font-size', `${fontSize}px`);
-    localStorage.setItem('pref_font_size', fontSize);
-    resetInactivityTimer();
-}
-
 function setTheme(themeName, e) {
     if (e) e.stopPropagation();
     document.body.className = themeName;
@@ -278,12 +317,6 @@ function toggleFullscreen(e) {
 function loadPreferences() {
     const savedTheme = localStorage.getItem('pref_theme');
     if (savedTheme) setTheme(savedTheme);
-
-    const savedSize = localStorage.getItem('pref_font_size');
-    if (savedSize) {
-        fontSize = parseInt(savedSize, 10);
-        document.documentElement.style.setProperty('--base-font-size', `${fontSize}px`);
-    }
 
     const savedKaraoke = localStorage.getItem('pref_karaoke');
     if (savedKaraoke === 'true') {
