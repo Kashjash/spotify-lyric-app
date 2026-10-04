@@ -31,7 +31,7 @@
                     </div>
                 </div>
 
-                <!-- Botones de Control de Reproducción (En Vertical o Menú) -->
+                <!-- Botones de Control de Reproducción (Solo Vertical) -->
                 <div id="playback-controls" class="inline-controls">
                     <button class="control-btn" onclick="controlPlayback('previous', event)" title="Anterior">⏮</button>
                     <button class="control-btn main-play" id="play-pause-btn" onclick="togglePlayPause(event)" title="Play/Pause">⏸</button>
@@ -48,7 +48,7 @@
                 </div>
             </header>
 
-            <!-- Controles Flotantes Independientes (Solo visibles en Horizontal ABAJO A LA DERECHA) -->
+            <!-- Controles Flotantes (ABAJO A LA DERECHA en Horizontal, separados del menú) -->
             <div id="floating-controls" onclick="event.stopPropagation()">
                 <button class="control-btn float-btn" onclick="controlPlayback('previous', event)" title="Anterior">⏮</button>
                 <button class="control-btn float-btn main-play" id="float-play-btn" onclick="togglePlayPause(event)" title="Play/Pause">⏸</button>
