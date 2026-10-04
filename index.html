@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Letras en Tiempo Real</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <button id="login-btn" onclick="redirectToSpotify()">Conectar con Spotify</button>
+
+        <div id="player-container" class="hidden">
+            <div id="track-info">
+                <img id="album-cover" src="" alt="Portada">
+                <div>
+                    <h2 id="track-title">Sin reproducción</h2>
+                    <p id="artist-name">-</p>
+                </div>
+            </div>
+            <div id="lyrics-container">
+                <p class="placeholder">Reproduce una canción en Spotify para cargar la letra...</p>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
