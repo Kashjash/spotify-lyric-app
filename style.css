@@ -6,7 +6,7 @@
     --text-active: #ffffff;
     --text-muted: rgba(255, 255, 255, 0.4);
     --bg-glass: rgba(18, 18, 18, 0.88);
-    --base-font-size: 28px; /* Tamaño base inicial para Karaoke / Letras */
+    --base-font-size: 28px;
 }
 
 .theme-spotify   { --primary-color: #1db954; --primary-glow: rgba(29, 185, 84, 0.5); }
@@ -82,10 +82,6 @@ html, body {
     margin: 4px 0;
 }
 
-#floating-controls {
-    display: none;
-}
-
 .control-btn {
     background: rgba(255, 255, 255, 0.15);
     border: none;
@@ -94,7 +90,6 @@ html, body {
     height: 38px;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 14px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -102,14 +97,18 @@ html, body {
 }
 .control-btn:active { transform: scale(0.9); }
 
+/* Botón principal puramente vectorial, blindado contra fondos naranjas del navegador */
 .control-btn.main-play {
     background: var(--primary-color) !important;
+    background-color: var(--primary-color) !important;
     color: #080808 !important;
-    width: 44px;
-    height: 44px;
-    font-size: 16px;
-    font-weight: 900;
-    box-shadow: 0 0 12px var(--primary-glow);
+    width: 46px;
+    height: 46px;
+    box-shadow: 0 0 14px var(--primary-glow);
+}
+
+.control-btn.main-play svg {
+    fill: #080808 !important;
 }
 
 /* --- MODO VERTICAL (PORTRAIT) --- */
@@ -189,7 +188,6 @@ html, body {
         padding: 16px;
     }
 
-    /* El menú lateral se queda fijo mostrando carátula, datos, controles y barra de tiempo */
     #top-bar {
         width: 240px;
         height: 100%;
@@ -210,11 +208,6 @@ html, body {
 
     #top-bar .inline-controls {
         display: flex;
-    }
-
-    /* Ocultamos los flotantes ya que la barra lateral ya los tiene integrados en horizontal */
-    #floating-controls {
-        display: none !important;
     }
 
     #track-header {
@@ -304,7 +297,6 @@ html, body {
     height: 36px;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 15px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -397,7 +389,7 @@ html, body {
     transform: scale(1.08);
 }
 
-/* Vista 2: Modo Karaoke (Controlado por Pinch-to-Zoom) */
+/* Vista 2: Modo Karaoke */
 #karaoke-container {
     display: flex;
     flex-direction: column;
