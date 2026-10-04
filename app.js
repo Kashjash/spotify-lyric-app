@@ -1,4 +1,4 @@
-const CLIENT_ID = '41fe4feba0d949dfa05027199cc715e9'; // REEMPLAZA CON TU CLIENT ID
+const CLIENT_ID = '41fe4feba0d949dfa05027199cc715e9';
 const REDIRECT_URI = window.location.origin + window.location.pathname;
 const SCOPES = 'user-read-currently-playing user-read-playback-state';
 
@@ -10,6 +10,27 @@ let isPlaying = false;
 let lastCheckTime = 0;
 let isKaraokeMode = false;
 let fontSize = 24;
+let hideTimeout = null;
+
+// --- CONTROL DE ATENUACIÓN DE MENÚ (AUTO-HIDE) ---
+function resetInactivityTimer() {
+    const topBar = document.getElementById('top-bar');
+    const progressWrapper = document.getElementById('progress-wrapper');
+    if (!topBar) return;
+
+    topBar.classList.remove('inactive-fade');
+    if (progressWrapper) progressWrapper.classList.remove('inactive-fade');
+
+    clearTimeout(hideTimeout);
+    hideTimeout = setTimeout(() => {
+        topBar.classList.add('inactive-fade');
+        if (progressWrapper) progressWrapper.classList.add('inactive-fade');
+    }, 4000);
+}
+
+window.addEventListener('mousemove', resetInactivityTimer);
+window.addEventListener('touchstart', resetInactivityTimer);
+window.addEventListener('click', resetInactivityTimer);
 
 // --- PKCE AUTH ---
 function generateRandomString(length) {
@@ -106,7 +127,7 @@ function parseLRC(lrcText) {
     return result;
 }
 
-// --- CONSULTA Y SINCRONIZACIÓN ---
+// --- REPRODUCCIÓN ---
 async function checkPlayback() {
     const token = localStorage.getItem('spotify_token');
     if (!token) return;
@@ -167,13 +188,11 @@ function updateUI() {
         const now = Math.min(currentProgress + elapsed, trackDuration);
         const remaining = trackDuration - now;
 
-        // Actualizar barra de progreso y tiempos
         document.getElementById('time-elapsed').innerText = formatTime(now);
         document.getElementById('time-remaining').innerText = `-${formatTime(remaining)}`;
         const pct = (now / trackDuration) * 100;
         document.getElementById('progress-bar-fill').style.width = `${pct}%`;
 
-        // Buscar línea activa
         if (lyricsData.length) {
             let activeIndex = -1;
             for (let i = 0; i < lyricsData.length; i++) {
@@ -182,14 +201,12 @@ function updateUI() {
             }
 
             if (isKaraokeMode) {
-                // Modo Karaoke
                 if (activeIndex >= 0) {
                     document.getElementById('karaoke-current').innerText = lyricsData[activeIndex].text;
                     const nextLine = lyricsData[activeIndex + 1];
                     document.getElementById('karaoke-next').innerText = nextLine ? nextLine.text : '---';
                 }
             } else {
-                // Modo Desplazamiento Normal
                 document.querySelectorAll('.lyric-line').forEach((line, index) => {
                     if (index === activeIndex) {
                         if (!line.classList.contains('active')) {
@@ -207,11 +224,14 @@ function updateUI() {
 }
 
 // --- CONTROLES DE AJUSTES ---
-function toggleSettings() {
+function toggleSettings(e) {
+    if (e) e.stopPropagation();
     document.getElementById('settings-panel').classList.toggle('hidden');
+    resetInactivityTimer();
 }
 
-function toggleKaraokeMode() {
+function toggleKaraokeMode(e) {
+    if (e) e.stopPropagation();
     isKaraokeMode = !isKaraokeMode;
     const scrollContainer = document.getElementById('lyrics-container');
     const karaokeContainer = document.getElementById('karaoke-container');
@@ -227,28 +247,34 @@ function toggleKaraokeMode() {
         btn.innerText = 'Activar Modo Karaoke 🎤';
     }
     localStorage.setItem('pref_karaoke', isKaraokeMode);
+    resetInactivityTimer();
 }
 
-function changeFontSize(delta) {
+function changeFontSize(delta, e) {
+    if (e) e.stopPropagation();
     fontSize = Math.max(16, Math.min(42, fontSize + delta));
     document.documentElement.style.setProperty('--base-font-size', `${fontSize}px`);
     localStorage.setItem('pref_font_size', fontSize);
+    resetInactivityTimer();
 }
 
-function setTheme(themeName) {
+function setTheme(themeName, e) {
+    if (e) e.stopPropagation();
     document.body.className = themeName;
     localStorage.setItem('pref_theme', themeName);
+    resetInactivityTimer();
 }
 
-function toggleFullscreen() {
+function toggleFullscreen(e) {
+    if (e) e.stopPropagation();
     if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
     } else {
         document.exitFullscreen().catch(() => {});
     }
+    resetInactivityTimer();
 }
 
-// Cargar preferencias guardadas
 function loadPreferences() {
     const savedTheme = localStorage.getItem('pref_theme');
     if (savedTheme) setTheme(savedTheme);
@@ -258,10 +284,16 @@ function loadPreferences() {
         fontSize = parseInt(savedSize, 10);
         document.documentElement.style.setProperty('--base-font-size', `${fontSize}px`);
     }
+
+    const savedKaraoke = localStorage.getItem('pref_karaoke');
+    if (savedKaraoke === 'true') {
+        toggleKaraokeMode();
+    }
 }
 
 // --- INICIALIZACIÓN ---
 loadPreferences();
+resetInactivityTimer();
 handleCallback().then(() => {
     setInterval(checkPlayback, 2500);
     checkPlayback();
