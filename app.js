@@ -13,7 +13,7 @@ let lastCheckTime = 0;
 let isKaraokeMode = false;
 let lastKaraokeText = '';
 
-// Playlists guardadas en localStorage (Release Radar por defecto si está vacío)
+// Playlists guardadas en localStorage (Release Radar por defecto)
 let favoritePlaylists = JSON.parse(localStorage.getItem('fav_playlists') || '["37i9dQZF1DXcBWIGoYBM5M"]');
 
 // --- GESTO PINCH-TO-ZOOM ---
@@ -50,7 +50,7 @@ document.querySelectorAll('.zoom-target').forEach(container => {
     }, { passive: true });
 });
 
-// --- PKCE AUTH & AUTO-LIMPIEZA ---
+// --- PKCE AUTH ---
 function generateRandomString(length) {
     const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     const values = crypto.getRandomValues(new Uint8Array(length));
@@ -203,13 +203,12 @@ function updateShuffleRepeatUI() {
     }
 }
 
-// --- QUICK MENU PLAYLISTS Y CARGA AUTOMÁTICA ---
+// --- QUICK MENU LIGERO (Solo muestra carátula y abre la playlist en Spotify al tocar) ---
 async function loadPlaylistsDock() {
     const token = localStorage.getItem('spotify_token');
     const container = document.getElementById('playlists-scroll-container');
     if (!token || !container) return;
 
-    // 1. Obtener playlists del usuario para autocompletar el dock automáticamente
     try {
         const userPlRes = await fetch('https://api.spotify.com/v1/me/playlists?limit=25', {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -237,60 +236,18 @@ async function loadPlaylistsDock() {
                 const pill = document.createElement('div');
                 pill.className = 'playlist-pill';
                 pill.innerHTML = `<img src="${img}" alt=""><span>${plData.name}</span>`;
-                pill.onclick = () => openPlaylistModal(plId, plData.name);
+                // Al tocar una playlist en el dock, cambia el contexto y reproduce o abre el link
+                pill.onclick = () => {
+                    window.open(plData.external_urls.spotify, '_blank');
+                };
                 container.appendChild(pill);
             }
         } catch (e) { console.error(e); }
     }
 }
 
-async function openPlaylistModal(playlistId, playlistName) {
-    const token = localStorage.getItem('spotify_token');
-    const modal = document.getElementById('playlist-tracks-modal');
-    const titleEl = document.getElementById('modal-playlist-title');
-    const listEl = document.getElementById('modal-tracks-list');
-    if (!token) return;
-
-    titleEl.innerText = playlistName;
-    listEl.innerHTML = '<p class="placeholder">Cargando canciones...</p>';
-    modal.classList.remove('hidden');
-
-    try {
-        const res = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=50`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-            const data = await res.json();
-            listEl.innerHTML = '';
-            
-            // Usar Fragment para renderizado ultra rápido y sin bloqueos
-            const fragment = document.createDocumentFragment();
-            data.items.forEach(item => {
-                const track = item.track;
-                if (!track) return;
-                const cover = track.album.images[0] ? track.album.images[0].url : '';
-                const div = document.createElement('div');
-                div.className = 'modal-track-item';
-                div.innerHTML = `
-                    <img src="${cover}" alt="">
-                    <div class="modal-track-info">
-                        <span class="modal-track-title">${track.name}</span>
-                        <span class="modal-track-artist">${track.artists.map(a => a.name).join(', ')}</span>
-                    </div>
-                `;
-                div.onclick = () => playTrackFromContext(track.uri, playlistId);
-                fragment.appendChild(div);
-            });
-            listEl.appendChild(fragment);
-        }
-    } catch (e) { listEl.innerHTML = '<p class="placeholder">Error al cargar canciones.</p>'; }
-}
-
-function closePlaylistModal() {
-    document.getElementById('playlist-tracks-modal').classList.add('hidden');
-}
-
-function openAddPlaylistModal() {
+function openAddPlaylistModal(e) {
+    if (e) e.stopPropagation();
     document.getElementById('add-playlist-modal').classList.remove('hidden');
 }
 
@@ -303,7 +260,6 @@ async function saveNewPlaylist() {
     if (!input) return;
     let id = input;
     
-    // Extracción inteligente si pegan el enlace de "Share" de Spotify
     if (input.includes('spotify.com/playlist/')) {
         id = input.split('playlist/')[1].split('?')[0];
     } else if (input.includes('playlist:')) {
@@ -317,27 +273,6 @@ async function saveNewPlaylist() {
     }
     closeAddPlaylistModal();
     document.getElementById('playlist-uri-input').value = '';
-}
-
-async function playTrackFromContext(trackUri, contextId) {
-    const token = localStorage.getItem('spotify_token');
-    if (!token) return;
-
-    try {
-        await fetch(`https://api.spotify.com/v1/me/player/play`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                context_uri: `spotify:playlist:${contextId}`,
-                offset: { uri: trackUri }
-            })
-        });
-        closePlaylistModal();
-        setTimeout(checkPlayback, 400);
-    } catch (err) { console.error(err); }
 }
 
 // --- API LETRAS & REFRESCAR MANUAL ---
@@ -419,7 +354,6 @@ async function checkPlayback(forceLyrics = false) {
         updatePlayButtonUI();
         updateShuffleRepeatUI();
 
-        // Mostrar nombre del playlist entrecomillado si existe contexto
         if (data.context && data.context.type === 'playlist') {
             const plUri = data.context.uri;
             const plId = plUri.split(':')[2];
