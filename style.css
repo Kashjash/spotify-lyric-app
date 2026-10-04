@@ -4,8 +4,8 @@
     --primary-color: #1db954;
     --primary-glow: rgba(29, 185, 84, 0.4);
     --text-active: #ffffff;
-    --text-muted: rgba(255, 255, 255, 0.35);
-    --bg-glass: rgba(18, 18, 18, 0.75);
+    --text-muted: rgba(255, 255, 255, 0.4);
+    --bg-glass: rgba(18, 18, 18, 0.85);
     --base-font-size: 24px;
 }
 
@@ -20,37 +20,33 @@ body {
     background-color: #080808;
     color: #ffffff;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    height: 100vh;
+    width: 100vw;
     overflow: hidden;
+    position: relative;
 }
 
-/* Fondo Dinámico con Portada Desenfocada */
 #bg-blur {
     position: fixed;
     top: -10%; left: -10%;
     width: 120%; height: 120%;
     background-size: cover;
     background-position: center;
-    filter: blur(60px) brightness(0.25);
+    filter: blur(60px) brightness(0.22);
     z-index: -1;
     transition: background-image 1s ease-in-out;
 }
 
 #app {
     width: 100%;
-    max-width: 650px;
-    height: 100vh;
+    height: 100%;
     display: flex;
-    flex-direction: column;
-    padding: 16px;
+    justify-content: center;
+    align-items: center;
 }
 
 .hidden { display: none !important; }
 
-/* Botón de Inicio */
 #login-btn {
     background-color: var(--primary-color);
     color: #000;
@@ -60,72 +56,190 @@ body {
     font-weight: 800;
     border-radius: 40px;
     cursor: pointer;
-    margin: auto;
     box-shadow: 0 0 20px var(--primary-glow);
+    z-index: 10;
 }
 
-/* Barra Superior */
-#top-bar {
-    background: var(--bg-glass);
-    backdrop-filter: blur(12px);
-    border-radius: 16px;
-    padding: 14px 18px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+#player-container {
+    width: 100%;
+    height: 100%;
     display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-#track-header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-}
-
-#album-cover {
-    width: 52px;
-    height: 52px;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-}
-
-#track-details { flex-grow: 1; overflow: hidden; }
-#track-title {
-    font-size: 16px;
-    font-weight: 700;
-    white-space: nowrap;
+    position: relative;
     overflow: hidden;
-    text-overflow: ellipsis;
-}
-#artist-name {
-    font-size: 13px;
-    color: var(--text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
-.icon-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    color: #fff;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 16px;
+/* Atenuación por Inactividad */
+.inactive-fade {
+    opacity: 0.2;
+    transition: opacity 0.5s ease;
+}
+.inactive-fade:hover, .inactive-fade:active {
+    opacity: 1;
+}
+
+/* --- MODO VERTICAL (PORTRAIT) --- */
+@media (orientation: portrait), (max-width: 600px) {
+    #player-container {
+        flex-direction: column;
+        padding: 12px;
+    }
+
+    #top-bar {
+        width: 100%;
+        background: var(--bg-glass);
+        backdrop-filter: blur(16px);
+        border-radius: 16px;
+        padding: 12px 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 100;
+        transition: opacity 0.4s ease;
+        flex-shrink: 0;
+    }
+
+    #track-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    #album-cover {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    #track-details { flex-grow: 1; overflow: hidden; }
+    #track-title {
+        font-size: 15px;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    #artist-name {
+        font-size: 12px;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #header-actions { display: flex; gap: 8px; }
+
+    #progress-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+        color: var(--text-muted);
+        transition: opacity 0.4s ease;
+    }
+
+    #lyrics-container, #karaoke-container {
+        flex-grow: 1;
+        width: 100%;
+        height: calc(100% - 110px);
+    }
+}
+
+/* --- MODO HORIZONTAL (LANDSCAPE) --- */
+@media (orientation: landscape) and (min-width: 601px) {
+    #player-container {
+        flex-direction: row;
+        padding: 16px 16px 52px 16px;
+    }
+
+    #top-bar {
+        width: 220px;
+        height: 100%;
+        background: var(--bg-glass);
+        backdrop-filter: blur(16px);
+        border-radius: 20px;
+        padding: 20px 14px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 16px;
+        z-index: 100;
+        transition: opacity 0.4s ease;
+        flex-shrink: 0;
+    }
+
+    #track-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 12px;
+        width: 100%;
+    }
+
+    #album-cover {
+        width: 110px;
+        height: 110px;
+        border-radius: 12px;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.6);
+    }
+
+    #track-details { width: 100%; }
+    #track-title {
+        font-size: 15px;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 4px;
+    }
+    #artist-name {
+        font-size: 12px;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #header-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 8px;
+    }
+
+    #progress-wrapper {
+        position: absolute;
+        bottom: 12px;
+        left: 16px;
+        right: 16px;
+        height: 32px;
+        background: var(--bg-glass);
+        backdrop-filter: blur(12px);
+        border-radius: 12px;
+        padding: 0 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+        color: var(--text-muted);
+        z-index: 90;
+        transition: opacity 0.4s ease;
+    }
+
+    #lyrics-container, #karaoke-container {
+        flex-grow: 1;
+        height: 100%;
+        margin-left: 16px;
+    }
 }
 
 /* Barra de Progreso */
-#progress-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 12px;
-    font-variant-numeric: tabular-nums;
-    color: var(--text-muted);
-}
-
 #progress-bar-container {
     flex-grow: 1;
     height: 6px;
@@ -142,18 +256,51 @@ body {
     transition: width 0.3s linear;
 }
 
-/* Panel de Ajustes */
+.icon-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    color: #fff;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background 0.2s, transform 0.2s;
+}
+.icon-btn:active { transform: scale(0.9); }
+
+/* Ventana Flotante de Ajustes */
 #settings-panel {
-    background: rgba(24, 24, 24, 0.95);
-    backdrop-filter: blur(15px);
-    border-radius: 16px;
-    margin-top: 10px;
-    padding: 16px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 380px;
+    background: rgba(20, 20, 20, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    border: 1px solid rgba(255,255,255,0.1);
+    gap: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    z-index: 200;
 }
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 8px;
+}
+.settings-header h3 { font-size: 16px; font-weight: 700; }
+.close-btn { background: none; border: none; color: #fff; font-size: 18px; cursor: pointer; }
 
 .settings-group {
     display: flex;
@@ -165,9 +312,10 @@ body {
 .settings-group button {
     background: rgba(255, 255, 255, 0.15);
     color: #fff;
-    border: none;
-    padding: 8px 14px;
-    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-weight: 600;
     cursor: pointer;
 }
 
@@ -175,10 +323,10 @@ body {
 
 .theme-picker { display: flex; gap: 10px; }
 .dot {
-    width: 22px; height: 22px;
+    width: 24px; height: 24px;
     border-radius: 50%;
     cursor: pointer;
-    border: 2px solid rgba(255,255,255,0.2);
+    border: 2px solid rgba(255,255,255,0.3);
 }
 .dot.spotify { background: #1db954; }
 .dot.neon { background: #00f3ff; }
@@ -186,11 +334,10 @@ body {
 .dot.gold { background: #ffb700; }
 .dot.mono { background: #ffffff; }
 
-/* Vista 1: Letras en Desplazamiento */
+/* Vista 1: Letra Completa */
 #lyrics-container {
-    flex-grow: 1;
     overflow-y: auto;
-    padding: 40px 10px;
+    padding: 30px 15px 100px 15px;
     display: flex;
     flex-direction: column;
     gap: 22px;
@@ -202,19 +349,18 @@ body {
     font-size: var(--base-font-size);
     font-weight: 700;
     color: var(--text-muted);
-    transition: color 0.3s, transform 0.3s, filter 0.3s;
-    line-height: 1.3;
+    transition: color 0.3s, transform 0.3s, opacity 0.3s;
+    line-height: 1.35;
 }
 
 .lyric-line.active {
     color: var(--primary-color);
-    text-shadow: 0 0 15px var(--primary-glow);
+    text-shadow: 0 0 16px var(--primary-glow);
     transform: scale(1.08);
 }
 
 /* Vista 2: Modo Karaoke */
 #karaoke-container {
-    flex-grow: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -240,12 +386,4 @@ body {
     opacity: 0.7;
 }
 
-.placeholder { color: var(--text-muted); margin-top: 50px; }
-
-/* Ajustes para Pantalla Horizontal (Landscape) */
-@media (orientation: landscape) and (max-height: 500px) {
-    #app { padding: 8px; }
-    #top-bar { padding: 8px 14px; }
-    #album-cover { width: 38px; height: 38px; }
-    #lyrics-container { padding: 20px 10px; gap: 14px; }
-}
+.placeholder { color: var(--text-muted); margin: auto; }
