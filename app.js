@@ -11,10 +11,7 @@ let lastCheckTime = 0;
 let isKaraokeMode = false;
 let lastKaraokeText = '';
 
-let isUserInteracting = false;
-let interactionTimeout = null;
-
-// --- GESTO PINCH-TO-ZOOM UNIVERSAL (Funciona tanto en Letra Completa como en Karaoke) ---
+// --- GESTO PINCH-TO-ZOOM UNIVERSAL ---
 let initialPinchDist = 0;
 let initialFontSize = 28;
 
@@ -146,12 +143,16 @@ async function controlPlayback(action, e) {
 }
 
 function updatePlayButtonUI() {
-    const playBtn = document.getElementById('play-pause-btn');
-    const floatPlayBtn = document.getElementById('float-play-btn');
-    const symbol = isPlaying ? '⏸' : '▶';
-    
-    if (playBtn) playBtn.innerText = symbol;
-    if (floatPlayBtn) floatPlayBtn.innerText = symbol;
+    const svgContainer = document.getElementById('play-pause-svg');
+    if (svgContainer) {
+        if (isPlaying) {
+            // Icono SVG de Pausa (dos barras verticales)
+            svgContainer.innerHTML = '<path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+        } else {
+            // Icono SVG de Play (triángulo)
+            svgContainer.innerHTML = '<path fill="currentColor" d="M8 5v14l11-7z"/>';
+        }
+    }
 }
 
 // --- API LETRAS ---
