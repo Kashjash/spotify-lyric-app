@@ -1,0 +1,56 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    background-color: #121212;
+    color: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+#app { width: 100%; max-width: 480px; text-align: center; }
+.hidden { display: none; }
+
+button {
+    background-color: #1db954;
+    color: black;
+    border: none;
+    padding: 14px 28px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 30px;
+    cursor: pointer;
+    margin-top: 50vh;
+    transform: translateY(-50%);
+}
+
+#track-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    text-align: left;
+}
+#album-cover { width: 64px; height: 64px; border-radius: 8px; }
+#track-title { font-size: 18px; font-weight: 700; color: #fff; }
+#artist-name { font-size: 14px; color: #b3b3b3; }
+
+#lyrics-container {
+    height: 70vh;
+    overflow-y: auto;
+    padding: 20px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    scroll-behavior: smooth;
+}
+.lyric-line {
+    font-size: 22px;
+    font-weight: 700;
+    color: #4a4a4a;
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+.lyric-line.active {
+    color: #1db954;
+    transform: scale(1.05);
+}
+.placeholder { color: #888; margin-top: 40px; }
