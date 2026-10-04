@@ -9,7 +9,6 @@
     --base-font-size: 24px;
 }
 
-/* Temas de Color */
 .theme-spotify   { --primary-color: #1db954; --primary-glow: rgba(29, 185, 84, 0.5); }
 .theme-neon      { --primary-color: #00f3ff; --primary-glow: rgba(0, 243, 255, 0.6); }
 .theme-synthwave { --primary-color: #ff007f; --primary-glow: rgba(255, 0, 127, 0.6); }
@@ -68,15 +67,13 @@ html, body {
     overflow: hidden;
 }
 
-/* Transiciones de Menú */
 #top-bar {
-    transition: opacity 0.5s ease, width 0.4s ease, height 0.4s ease, padding 0.4s ease, margin 0.4s ease;
+    transition: opacity 0.4s ease, width 0.4s ease, height 0.4s ease, padding 0.4s ease, margin 0.4s ease;
 }
 
 #top-bar.faded { opacity: 0.25; }
 #progress-wrapper.faded { opacity: 0.25; }
 
-/* Controles Multimedia Estándar (Menú Vertical) */
 .inline-controls {
     display: flex;
     justify-content: center;
@@ -85,17 +82,16 @@ html, body {
     margin: 4px 0;
 }
 
-/* Controles Flotantes en Modo Horizontal (Abajo a la Derecha) */
 #floating-controls {
     display: none;
 }
 
 .control-btn {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.15);
     border: none;
     color: #fff;
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     cursor: pointer;
     font-size: 14px;
@@ -106,16 +102,15 @@ html, body {
 }
 .control-btn:active { transform: scale(0.9); }
 
-/* Blindaje absoluto para el botón Play/Pause sin fondos extraños */
+/* Botón principal limpio, sin tonos naranjas heredados */
 .control-btn.main-play {
     background: var(--primary-color) !important;
-    background-color: var(--primary-color) !important;
     color: #080808 !important;
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     font-size: 16px;
     font-weight: 900;
-    box-shadow: 0 0 14px var(--primary-glow);
+    box-shadow: 0 0 12px var(--primary-glow);
 }
 
 /* --- MODO VERTICAL (PORTRAIT) --- */
@@ -202,7 +197,7 @@ html, body {
 @media (orientation: landscape) and (min-width: 601px) {
     #player-container {
         flex-direction: row;
-        padding: 16px 16px 56px 16px;
+        padding: 16px;
     }
 
     #top-bar {
@@ -220,11 +215,13 @@ html, body {
         gap: 12px;
         z-index: 100;
         flex-shrink: 0;
+        position: relative;
     }
 
     #top-bar.hidden-bar {
         opacity: 0;
         width: 0 !important;
+        min-width: 0 !important;
         padding: 0 !important;
         margin: 0 !important;
         border: none;
@@ -232,27 +229,25 @@ html, body {
         pointer-events: none;
     }
 
-    /* Ocultar controles dentro de la barra lateral en horizontal para usar los flotantes */
     #top-bar .inline-controls {
         display: none;
     }
 
-    /* Mostrar botonera flotante abajo a la derecha */
+    /* Botonera flotante abajo a la derecha de todo el viewport */
     #floating-controls {
         display: flex;
-        position: absolute;
-        bottom: 20px;
-        right: 20px;
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
         background: var(--bg-glass);
         backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        padding: 10px 14px;
-        border-radius: 24px;
-        gap: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        padding: 12px 18px;
+        border-radius: 30px;
+        gap: 14px;
         align-items: center;
-        z-index: 150;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-        transition: opacity 0.4s ease;
+        z-index: 250;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.7);
     }
 
     .float-btn {
@@ -262,9 +257,9 @@ html, body {
     }
 
     .float-btn.main-play {
-        width: 50px;
-        height: 50px;
-        font-size: 18px;
+        width: 52px;
+        height: 52px;
+        font-size: 20px;
     }
 
     #track-header {
@@ -309,18 +304,18 @@ html, body {
     #progress-wrapper {
         position: absolute;
         bottom: 12px;
-        left: 16px;
-        right: 16px;
+        left: 12px;
+        right: 12px;
         height: 36px;
         background: var(--bg-glass);
         backdrop-filter: blur(12px);
         border-radius: 12px;
-        padding: 0 16px;
+        padding: 0 14px;
         border: 1px solid rgba(255, 255, 255, 0.08);
         display: flex;
         align-items: center;
-        gap: 12px;
-        font-size: 12px;
+        gap: 10px;
+        font-size: 11px;
         font-variant-numeric: tabular-nums;
         color: var(--text-muted);
         z-index: 90;
@@ -337,11 +332,10 @@ html, body {
         width: 100%;
         margin-left: 0;
         min-height: 0;
-        transition: all 0.5s ease;
+        transition: all 0.4s ease;
     }
 }
 
-/* Barra de Progreso */
 #progress-bar-container {
     flex-grow: 1;
     height: 6px;
@@ -374,7 +368,6 @@ html, body {
 }
 .icon-btn:active { transform: scale(0.9); }
 
-/* Ventana Flotante de Ajustes */
 #settings-panel {
     position: fixed;
     top: 50%;
@@ -391,7 +384,7 @@ html, body {
     gap: 16px;
     border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-    z-index: 200;
+    z-index: 300;
 }
 
 .settings-header {
@@ -434,7 +427,6 @@ html, body {
 .dot.gold { background: #ffb700; }
 .dot.mono { background: #ffffff; }
 
-/* Vista 1: Letra Completa */
 #lyrics-container {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -460,7 +452,6 @@ html, body {
     transform: scale(1.08);
 }
 
-/* Vista 2: Modo Karaoke */
 #karaoke-container {
     display: flex;
     flex-direction: column;
