@@ -1,17 +1,22 @@
 const CLIENT_ID = '41fe4feba0d949dfa05027199cc715e9';
 const REDIRECT_URI = window.location.origin + window.location.pathname;
-const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state';
+const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state playlist-read-private playlist-read-collaborative';
 
 let currentTrackId = null;
 let lyricsData = [];
 let currentProgress = 0;
 let trackDuration = 0;
 let isPlaying = false;
+let isShuffle = false;
+let repeatState = 'off'; // off, track, context
 let lastCheckTime = 0;
 let isKaraokeMode = false;
 let lastKaraokeText = '';
 
-// --- GESTO PINCH-TO-ZOOM UNIVERSAL ---
+// Playlists guardadas en localStorage
+let favoritePlaylists = JSON.parse(localStorage.getItem('fav_playlists') || '["37i9dQZF1DXcBWIGoYBM5M"]'); // Por defecto Release Radar si no hay nada
+
+// --- GESTO PINCH-TO-ZOOM ---
 let initialPinchDist = 0;
 let initialFontSize = 28;
 
@@ -45,7 +50,7 @@ document.querySelectorAll('.zoom-target').forEach(container => {
     }, { passive: true });
 });
 
-// --- PKCE AUTH ---
+// --- PKCE AUTH & AUTO-LIMPIEZA DE TOKEN ---
 function generateRandomString(length) {
     const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     const values = crypto.getRandomValues(new Uint8Array(length));
@@ -102,7 +107,7 @@ async function handleCallback() {
     }
 }
 
-// --- CONTROLES MULTIMEDIA SPOTIFY API ---
+// --- CONTROLES Y API SPOTIFY ---
 async function togglePlayPause(e) {
     if (e) e.stopPropagation();
     const token = localStorage.getItem('spotify_token');
@@ -119,9 +124,7 @@ async function togglePlayPause(e) {
             updatePlayButtonUI();
             setTimeout(checkPlayback, 300);
         }
-    } catch (err) {
-        console.error('Error al cambiar reproducción', err);
-    }
+    } catch (err) { console.error(err); }
 }
 
 async function controlPlayback(action, e) {
@@ -137,28 +140,187 @@ async function controlPlayback(action, e) {
         if (res.ok || res.status === 204) {
             setTimeout(checkPlayback, 500);
         }
-    } catch (err) {
-        console.error(`Error en ${action}`, err);
-    }
+    } catch (err) { console.error(err); }
+}
+
+async function toggleShuffle(e) {
+    if (e) e.stopPropagation();
+    const token = localStorage.getItem('spotify_token');
+    if (!token) return;
+
+    isShuffle = !isShuffle;
+    try {
+        await fetch(`https://api.spotify.com/v1/me/player/shuffle?state=${isShuffle}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        updateShuffleRepeatUI();
+    } catch (err) { console.error(err); }
+}
+
+async function toggleRepeat(e) {
+    if (e) e.stopPropagation();
+    const token = localStorage.getItem('spotify_token');
+    if (!token) return;
+
+    if (repeatState === 'off') repeatState = 'context';
+    else if (repeatState === 'context') repeatState = 'track';
+    else repeatState = 'off';
+
+    try {
+        await fetch(`https://api.spotify.com/v1/me/player/repeat?state=${repeatState}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        updateShuffleRepeatUI();
+    } catch (err) { console.error(err); }
 }
 
 function updatePlayButtonUI() {
     const svgContainer = document.getElementById('play-pause-svg');
     if (svgContainer) {
         if (isPlaying) {
-            // Icono SVG de Pausa (dos barras verticales)
             svgContainer.innerHTML = '<path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
         } else {
-            // Icono SVG de Play (triángulo)
             svgContainer.innerHTML = '<path fill="currentColor" d="M8 5v14l11-7z"/>';
         }
     }
 }
 
-// --- API LETRAS ---
+function updateShuffleRepeatUI() {
+    const shuffleBtn = document.getElementById('shuffle-btn');
+    const repeatBtn = document.getElementById('repeat-btn');
+    if (shuffleBtn) {
+        if (isShuffle) shuffleBtn.classList.add('active-state');
+        else shuffleBtn.classList.remove('active-state');
+    }
+    if (repeatBtn) {
+        if (repeatState !== 'off') {
+            repeatBtn.classList.add('active-state');
+            repeatBtn.innerText = repeatState === 'track' ? '🔂' : '🔁';
+        } else {
+            repeatBtn.classList.remove('active-state');
+            repeatBtn.innerText = '🔁';
+        }
+    }
+}
+
+// --- QUICK MENU PLAYLISTS Y CARGA DE DATOS ---
+async function loadPlaylistsDock() {
+    const token = localStorage.getItem('spotify_token');
+    const container = document.getElementById('playlists-scroll-container');
+    if (!token || !container) return;
+
+    container.innerHTML = '';
+    for (const plId of favoritePlaylists) {
+        try {
+            const res = await fetch(`https://api.spotify.com/v1/playlists/${plId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const plData = await res.json();
+                const img = plData.images && plData.images[0] ? plData.images[0].url : '';
+                const pill = document.createElement('div');
+                pill.className = 'playlist-pill';
+                pill.innerHTML = `<img src="${img}" alt=""><span>${plData.name}</span>`;
+                pill.onclick = () => openPlaylistModal(plId, plData.name);
+                container.appendChild(pill);
+            }
+        } catch (e) { console.error(e); }
+    }
+}
+
+async function openPlaylistModal(playlistId, playlistName) {
+    const token = localStorage.getItem('spotify_token');
+    const modal = document.getElementById('playlist-tracks-modal');
+    const titleEl = document.getElementById('modal-playlist-title');
+    const listEl = document.getElementById('modal-tracks-list');
+    if (!token) return;
+
+    titleEl.innerText = playlistName;
+    listEl.innerHTML = '<p class="placeholder">Cargando canciones...</p>';
+    modal.classList.remove('hidden');
+
+    try {
+        const res = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            listEl.innerHTML = '';
+            data.items.forEach(item => {
+                const track = item.track;
+                if (!track) return;
+                const cover = track.album.images[0] ? track.album.images[0].url : '';
+                const div = document.createElement('div');
+                div.className = 'modal-track-item';
+                div.innerHTML = `
+                    <img src="${cover}" alt="">
+                    <div class="modal-track-info">
+                        <span class="modal-track-title">${track.name}</span>
+                        <span class="modal-track-artist">${track.artists.map(a => a.name).join(', ')}</span>
+                    </div>
+                `;
+                div.onclick = () => playTrackFromContext(track.uri, playlistId);
+                listEl.appendChild(div);
+            });
+        }
+    } catch (e) { listEl.innerHTML = '<p class="placeholder">Error al cargar canciones.</p>'; }
+}
+
+function closePlaylistModal() {
+    document.getElementById('playlist-tracks-modal').classList.add('hidden');
+}
+
+function openAddPlaylistModal() {
+    document.getElementById('add-playlist-modal').classList.remove('hidden');
+}
+
+function closeAddPlaylistModal() {
+    document.getElementById('add-playlist-modal').classList.add('hidden');
+}
+
+async function saveNewPlaylist() {
+    const input = document.getElementById('playlist-uri-input').value.trim();
+    if (!input) return;
+    let id = input;
+    if (input.includes('playlist/')) {
+        id = input.split('playlist/')[1].split('?')[0];
+    }
+    if (!favoritePlaylists.includes(id)) {
+        favoritePlaylists.push(id);
+        localStorage.setItem('fav_playlists', JSON.stringify(favoritePlaylists));
+        loadPlaylistsDock();
+    }
+    closeAddPlaylistModal();
+    document.getElementById('playlist-uri-input').value = '';
+}
+
+async function playTrackFromContext(trackUri, contextId) {
+    const token = localStorage.getItem('spotify_token');
+    if (!token) return;
+
+    try {
+        await fetch(`https://api.spotify.com/v1/me/player/play`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                context_uri: `spotify:playlist:${contextId}`,
+                offset: { uri: trackUri }
+            })
+        });
+        closePlaylistModal();
+        setTimeout(checkPlayback, 400);
+    } catch (err) { console.error(err); }
+}
+
+// --- API LETRAS & REFRESCAR MANUAL ---
 async function fetchLyrics(track, artist, album, duration) {
     const durationSec = Math.round(duration / 1000);
-    const url = `https://lrclib.net/api/get?track_name=${encodeURIComponent(track)}&artist_name=${encodeURIComponent(artist)}&album_name=${encodeURIComponent(artist)}&duration=${durationSec}`;
+    const url = `https://lrclib.net/api/get?track_name=${encodeURIComponent(track)}&artist_name=${encodeURIComponent(artist)}&album_name=${encodeURIComponent(album)}&duration=${durationSec}`;
     try {
         let res = await fetch(url);
         if (!res.ok) {
@@ -171,9 +333,14 @@ async function fetchLyrics(track, artist, album, duration) {
         }
         const data = await res.json();
         return parseLRC(data.syncedLyrics || '');
-    } catch {
-        return [];
-    }
+    } catch { return []; }
+}
+
+function manualSyncLyrics(e) {
+    if (e) e.stopPropagation();
+    if (!currentTrackId) return;
+    // Forzar re-consulta de la letra actual
+    checkPlayback(true);
 }
 
 function parseLRC(lrcText) {
@@ -194,7 +361,6 @@ function parseLRC(lrcText) {
     return result;
 }
 
-// --- ACTUALIZAR TEXTO KARAOKE CON ROLL-UP ---
 function updateKaraokeText(text) {
     if (text !== lastKaraokeText) {
         lastKaraokeText = text;
@@ -207,7 +373,7 @@ function updateKaraokeText(text) {
     }
 }
 
-async function checkPlayback() {
+async function checkPlayback(forceLyrics = false) {
     const token = localStorage.getItem('spotify_token');
     if (!token) return;
 
@@ -215,7 +381,7 @@ async function checkPlayback() {
     document.getElementById('player-container').classList.remove('hidden');
 
     try {
-        const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+        const res = await fetch('https://api.spotify.com/v1/me/player', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.status === 204) return;
@@ -225,15 +391,34 @@ async function checkPlayback() {
         trackDuration = data.item.duration_ms / 1000;
         currentProgress = data.progress_ms / 1000;
         isPlaying = data.is_playing;
+        isShuffle = data.shuffle_state;
+        repeatState = data.repeat_state;
         lastCheckTime = performance.now();
         updatePlayButtonUI();
+        updateShuffleRepeatUI();
 
-        if (data.item.id !== currentTrackId) {
+        // Extraer nombre de la playlist desde el contexto si existe
+        if (data.context && data.context.type === 'playlist') {
+            const plUri = data.context.uri;
+            const plId = plUri.split(':')[2];
+            fetch(`https://api.spotify.com/v1/playlists/${plId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }).then(r => r.json()).then(plInfo => {
+                const ctxLabel = document.getElementById('playlist-context-label');
+                ctxLabel.innerText = `"${plInfo.name}"`;
+                ctxLabel.classList.remove('hidden');
+            }).catch(() => {});
+        } else {
+            document.getElementById('playlist-context-label').classList.add('hidden');
+        }
+
+        if (data.item.id !== currentTrackId || forceLyrics) {
             currentTrackId = data.item.id;
             const coverUrl = data.item.album.images[0].url;
 
             document.getElementById('track-title').innerText = data.item.name;
             document.getElementById('artist-name').innerText = data.item.artists.map(a => a.name).join(', ');
+            document.getElementById('album-name').innerText = data.item.album.name;
             document.getElementById('album-cover').src = coverUrl;
             document.getElementById('bg-blur').style.backgroundImage = `url(${coverUrl})`;
 
@@ -241,7 +426,11 @@ async function checkPlayback() {
             renderLyrics(lyricsData);
         }
     } catch (e) {
-        console.error(e);
+        // Si el token falló, limpiamos y redirigimos de forma limpia
+        if (e.status === 401) {
+            localStorage.removeItem('spotify_token');
+            redirectToSpotify();
+        }
     }
 }
 
@@ -292,14 +481,11 @@ function updateUI() {
                     if (index === activeIndex) {
                         if (!line.classList.contains('active')) {
                             line.classList.add('active');
-
-                            if (!isUserInteracting) {
-                                const containerHeight = container.clientHeight;
-                                const lineTop = line.offsetTop;
-                                const lineHeight = line.clientHeight;
-                                const targetScroll = lineTop - (containerHeight / 2) + (lineHeight / 2);
-                                container.scrollTo({ top: targetScroll, behavior: 'smooth' });
-                            }
+                            const containerHeight = container.clientHeight;
+                            const lineTop = line.offsetTop;
+                            const lineHeight = line.clientHeight;
+                            const targetScroll = lineTop - (containerHeight / 2) + (lineHeight / 2);
+                            container.scrollTo({ top: targetScroll, behavior: 'smooth' });
                         }
                     } else {
                         line.classList.remove('active');
@@ -367,6 +553,7 @@ function loadPreferences() {
 
 loadPreferences();
 handleCallback().then(() => {
+    loadPlaylistsDock();
     setInterval(checkPlayback, 2500);
     checkPlayback();
     requestAnimationFrame(updateUI);
