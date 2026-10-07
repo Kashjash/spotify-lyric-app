@@ -23,7 +23,7 @@ html, body {
     background-color: #080808;
     color: #ffffff;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    -webkit-tap-highlight-color: transparent; /* Elimina cualquier destello naranja nativo de Android */
+    -webkit-tap-highlight-color: transparent;
 }
 
 #bg-blur {
@@ -88,7 +88,6 @@ html, body {
     margin-bottom: 6px;
 }
 
-/* Blindaje absoluto contra fondos naranjas en botones */
 .control-btn, .icon-btn {
     background-color: rgba(255, 255, 255, 0.12) !important;
     border: none !important;
@@ -108,7 +107,7 @@ html, body {
 .control-btn:active, .icon-btn:active { transform: scale(0.9); }
 
 .control-btn svg, .icon-btn svg {
-    pointer-events: none; /* Evita interferencias táctiles en los vectores */
+    pointer-events: none;
 }
 
 .control-btn.secondary-btn {
@@ -141,7 +140,6 @@ html, body {
     fill: #080808 !important; 
 }
 
-/* Nombre de playlist actual sobre el álbum */
 #playlist-context-label {
     font-size: 11px;
     color: var(--primary-color);
@@ -154,7 +152,6 @@ html, body {
     text-align: center;
 }
 
-/* Quick Menu Dock de Playlists (Inferior) */
 #playlists-dock {
     position: absolute;
     bottom: 12px;
@@ -225,7 +222,6 @@ html, body {
     flex-shrink: 0;
 }
 
-/* Modal de Añadir Playlist */
 #add-playlist-modal {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -280,7 +276,6 @@ html, body {
     cursor: pointer;
 }
 
-/* --- MODO VERTICAL (PORTRAIT) --- */
 @media (orientation: portrait), (max-width: 600px) {
     #player-container {
         flex-direction: column;
@@ -360,7 +355,6 @@ html, body {
     }
 }
 
-/* --- MODO HORIZONTAL (LANDSCAPE) --- */
 @media (orientation: landscape) and (min-width: 601px) {
     #player-container {
         flex-direction: row;
