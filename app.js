@@ -13,7 +13,6 @@ let lastCheckTime = 0;
 let isKaraokeMode = false;
 let lastKaraokeText = '';
 
-// Playlists guardadas en localStorage (Release Radar por defecto)
 let favoritePlaylists = JSON.parse(localStorage.getItem('fav_playlists') || '["37i9dQZF1DXcBWIGoYBM5M"]');
 
 // --- GESTO PINCH-TO-ZOOM ---
@@ -50,7 +49,7 @@ document.querySelectorAll('.zoom-target').forEach(container => {
     }, { passive: true });
 });
 
-// --- PKCE AUTH ---
+// --- PKCE AUTH & TOKEN REFRESH ROBUSTO ---
 function generateRandomString(length) {
     const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     const values = crypto.getRandomValues(new Uint8Array(length));
@@ -68,7 +67,12 @@ function base64encode(input) {
 }
 
 async function redirectToSpotify() {
-    localStorage.clear();
+    // Limpiamos únicamente credenciales de autenticación sin tocar preferencias ni favoritos
+    localStorage.removeItem('spotify_token');
+    localStorage.removeItem('spotify_refresh_token');
+    localStorage.removeItem('token_expiry');
+    localStorage.removeItem('code_verifier');
+
     const verifier = generateRandomString(64);
     const challenge = base64encode(await sha256(verifier));
     localStorage.setItem('code_verifier', verifier);
@@ -85,33 +89,79 @@ async function redirectToSpotify() {
 }
 
 async function handleCallback() {
-    const code = new URLSearchParams(window.location.search).get('code');
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
     if (!code) return;
 
     const verifier = localStorage.getItem('code_verifier');
-    const res = await fetch('https://accounts.spotify.com/api/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-            client_id: CLIENT_ID,
-            grant_type: 'authorization_code',
-            code: code,
-            redirect_uri: REDIRECT_URI,
-            code_verifier: verifier,
-        })
-    });
-    const data = await res.json();
-    if (data.access_token) {
-        localStorage.setItem('spotify_token', data.access_token);
-        window.history.replaceState({}, document.title, REDIRECT_URI);
+    if (!verifier) return;
+
+    try {
+        const res = await fetch('https://accounts.spotify.com/api/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                client_id: CLIENT_ID,
+                grant_type: 'authorization_code',
+                code: code,
+                redirect_uri: REDIRECT_URI,
+                code_verifier: verifier,
+            })
+        });
+        const data = await res.json();
+        if (data.access_token) {
+            localStorage.setItem('spotify_token', data.access_token);
+            if (data.refresh_token) {
+                localStorage.setItem('spotify_refresh_token', data.refresh_token);
+            }
+            // Los tokens de Spotify expiran en 3600 segundos (1 hora)
+            localStorage.setItem('token_expiry', Date.now() + (data.expires_in || 3600) * 1000);
+            window.history.replaceState({}, document.title, REDIRECT_URI);
+        }
+    } catch (err) {
+        console.error("Error en handleCallback:", err);
     }
+}
+
+// Obtiene un token válido, renovándolo automáticamente con el Refresh Token si ha caducado
+async function getValidToken() {
+    let token = localStorage.getItem('spotify_token');
+    let expiry = localStorage.getItem('token_expiry');
+    let refreshToken = localStorage.getItem('spotify_refresh_token');
+
+    // Si el token expira en menos de 1 minuto o ya expiró, intentamos refrescarlo de forma silenciosa
+    if ((!token || (expiry && Date.now() > parseInt(expiry) - 60000)) && refreshToken) {
+        try {
+            const res = await fetch('https://accounts.spotify.com/api/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    client_id: CLIENT_ID,
+                    grant_type: 'refresh_token',
+                    refresh_token: refreshToken
+                })
+            });
+            const data = await res.json();
+            if (data.access_token) {
+                localStorage.setItem('spotify_token', data.access_token);
+                if (data.refresh_token) {
+                    localStorage.setItem('spotify_refresh_token', data.refresh_token);
+                }
+                localStorage.setItem('token_expiry', Date.now() + (data.expires_in || 3600) * 1000);
+                return data.access_token;
+            }
+        } catch (err) {
+            console.error("Error renovando token automáticamente:", err);
+        }
+    }
+    return token;
 }
 
 // --- CONTROLES Y API SPOTIFY ---
 async function togglePlayPause(e) {
     if (e) e.stopPropagation();
-    const token = localStorage.getItem('spotify_token');
-    if (!token) return;
+    const token = await getValidToken();
+    if (!token) return redirectToSpotify();
 
     const endpoint = isPlaying ? 'pause' : 'play';
     try {
@@ -129,8 +179,8 @@ async function togglePlayPause(e) {
 
 async function controlPlayback(action, e) {
     if (e) e.stopPropagation();
-    const token = localStorage.getItem('spotify_token');
-    if (!token) return;
+    const token = await getValidToken();
+    if (!token) return redirectToSpotify();
 
     try {
         const res = await fetch(`https://api.spotify.com/v1/me/player/${action}`, {
@@ -145,8 +195,8 @@ async function controlPlayback(action, e) {
 
 async function toggleShuffle(e) {
     if (e) e.stopPropagation();
-    const token = localStorage.getItem('spotify_token');
-    if (!token) return;
+    const token = await getValidToken();
+    if (!token) return redirectToSpotify();
 
     isShuffle = !isShuffle;
     try {
@@ -160,8 +210,8 @@ async function toggleShuffle(e) {
 
 async function toggleRepeat(e) {
     if (e) e.stopPropagation();
-    const token = localStorage.getItem('spotify_token');
-    if (!token) return;
+    const token = await getValidToken();
+    if (!token) return redirectToSpotify();
 
     if (repeatState === 'off') repeatState = 'context';
     else if (repeatState === 'context') repeatState = 'track';
@@ -203,9 +253,9 @@ function updateShuffleRepeatUI() {
     }
 }
 
-// --- QUICK MENU LIGERO (Solo muestra carátula y abre la playlist en Spotify al tocar) ---
+// --- QUICK MENU DOCK DE PLAYLISTS ---
 async function loadPlaylistsDock() {
-    const token = localStorage.getItem('spotify_token');
+    const token = await getValidToken();
     const container = document.getElementById('playlists-scroll-container');
     if (!token || !container) return;
 
@@ -236,7 +286,6 @@ async function loadPlaylistsDock() {
                 const pill = document.createElement('div');
                 pill.className = 'playlist-pill';
                 pill.innerHTML = `<img src="${img}" alt=""><span>${plData.name}</span>`;
-                // Al tocar una playlist en el dock, cambia el contexto y reproduce o abre el link
                 pill.onclick = () => {
                     window.open(plData.external_urls.spotify, '_blank');
                 };
@@ -331,8 +380,12 @@ function updateKaraokeText(text) {
 }
 
 async function checkPlayback(forceLyrics = false) {
-    const token = localStorage.getItem('spotify_token');
-    if (!token) return;
+    const token = await getValidToken();
+    if (!token) {
+        document.getElementById('login-btn').classList.remove('hidden');
+        document.getElementById('player-container').classList.add('hidden');
+        return;
+    }
 
     document.getElementById('login-btn').classList.add('hidden');
     document.getElementById('player-container').classList.remove('hidden');
@@ -342,6 +395,10 @@ async function checkPlayback(forceLyrics = false) {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.status === 204) return;
+        if (res.status === 401) {
+            redirectToSpotify();
+            return;
+        }
         const data = await res.json();
         if (!data.item) return;
 
@@ -382,10 +439,7 @@ async function checkPlayback(forceLyrics = false) {
             renderLyrics(lyricsData);
         }
     } catch (e) {
-        if (e.status === 401) {
-            localStorage.removeItem('spotify_token');
-            redirectToSpotify();
-        }
+        console.error("Error en checkPlayback:", e);
     }
 }
 
