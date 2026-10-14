@@ -1,6 +1,6 @@
 const CLIENT_ID = '41fe4feba0d949dfa05027199cc715e9';
 const REDIRECT_URI = window.location.origin + window.location.pathname;
-const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state playlist-read-private playlist-read-collaborative';
+const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state';
 
 let currentTrackId = null;
 let lyricsData = [];
@@ -12,8 +12,6 @@ let repeatState = 'off';
 let lastCheckTime = 0;
 let isKaraokeMode = false;
 let lastKaraokeText = '';
-
-let favoritePlaylists = JSON.parse(localStorage.getItem('fav_playlists') || '["37i9dQZF1DXcBWIGoYBM5M"]');
 
 // --- GESTO PINCH-TO-ZOOM ---
 let initialPinchDist = 0;
@@ -67,7 +65,6 @@ function base64encode(input) {
 }
 
 async function redirectToSpotify() {
-    // Limpiamos únicamente credenciales de autenticación sin tocar preferencias ni favoritos
     localStorage.removeItem('spotify_token');
     localStorage.removeItem('spotify_refresh_token');
     localStorage.removeItem('token_expiry');
@@ -114,7 +111,6 @@ async function handleCallback() {
             if (data.refresh_token) {
                 localStorage.setItem('spotify_refresh_token', data.refresh_token);
             }
-            // Los tokens de Spotify expiran en 3600 segundos (1 hora)
             localStorage.setItem('token_expiry', Date.now() + (data.expires_in || 3600) * 1000);
             window.history.replaceState({}, document.title, REDIRECT_URI);
         }
@@ -123,13 +119,11 @@ async function handleCallback() {
     }
 }
 
-// Obtiene un token válido, renovándolo automáticamente con el Refresh Token si ha caducado
 async function getValidToken() {
     let token = localStorage.getItem('spotify_token');
     let expiry = localStorage.getItem('token_expiry');
     let refreshToken = localStorage.getItem('spotify_refresh_token');
 
-    // Si el token expira en menos de 1 minuto o ya expiró, intentamos refrescarlo de forma silenciosa
     if ((!token || (expiry && Date.now() > parseInt(expiry) - 60000)) && refreshToken) {
         try {
             const res = await fetch('https://accounts.spotify.com/api/token', {
@@ -251,77 +245,6 @@ function updateShuffleRepeatUI() {
             repeatBtn.classList.remove('active-state');
         }
     }
-}
-
-// --- QUICK MENU DOCK DE PLAYLISTS ---
-async function loadPlaylistsDock() {
-    const token = await getValidToken();
-    const container = document.getElementById('playlists-scroll-container');
-    if (!token || !container) return;
-
-    try {
-        const userPlRes = await fetch('https://api.spotify.com/v1/me/playlists?limit=25', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (userPlRes.ok) {
-            const userPlData = await userPlRes.json();
-            userPlData.items.forEach(pl => {
-                if (pl && pl.id && !favoritePlaylists.includes(pl.id)) {
-                    favoritePlaylists.push(pl.id);
-                }
-            });
-            localStorage.setItem('fav_playlists', JSON.stringify(favoritePlaylists));
-        }
-    } catch (e) { console.error(e); }
-
-    container.innerHTML = '';
-    for (const plId of favoritePlaylists) {
-        try {
-            const res = await fetch(`https://api.spotify.com/v1/playlists/${plId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const plData = await res.json();
-                const img = plData.images && plData.images[0] ? plData.images[0].url : '';
-                const pill = document.createElement('div');
-                pill.className = 'playlist-pill';
-                pill.innerHTML = `<img src="${img}" alt=""><span>${plData.name}</span>`;
-                pill.onclick = () => {
-                    window.open(plData.external_urls.spotify, '_blank');
-                };
-                container.appendChild(pill);
-            }
-        } catch (e) { console.error(e); }
-    }
-}
-
-function openAddPlaylistModal(e) {
-    if (e) e.stopPropagation();
-    document.getElementById('add-playlist-modal').classList.remove('hidden');
-}
-
-function closeAddPlaylistModal() {
-    document.getElementById('add-playlist-modal').classList.add('hidden');
-}
-
-async function saveNewPlaylist() {
-    const input = document.getElementById('playlist-uri-input').value.trim();
-    if (!input) return;
-    let id = input;
-    
-    if (input.includes('spotify.com/playlist/')) {
-        id = input.split('playlist/')[1].split('?')[0];
-    } else if (input.includes('playlist:')) {
-        id = input.split('playlist:')[1];
-    }
-
-    if (id && !favoritePlaylists.includes(id)) {
-        favoritePlaylists.push(id);
-        localStorage.setItem('fav_playlists', JSON.stringify(favoritePlaylists));
-        loadPlaylistsDock();
-    }
-    closeAddPlaylistModal();
-    document.getElementById('playlist-uri-input').value = '';
 }
 
 // --- API LETRAS & REFRESCAR MANUAL ---
@@ -562,7 +485,6 @@ function loadPreferences() {
 
 loadPreferences();
 handleCallback().then(() => {
-    loadPlaylistsDock();
     setInterval(checkPlayback, 2500);
     checkPlayback();
     requestAnimationFrame(updateUI);
